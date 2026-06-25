@@ -59,42 +59,42 @@ export const searchMovies = async (query) => {
   return (data.results || []).filter((movie) => movie.poster_path).slice(0, 10);
 };
 
-// ✅ NEW — Discover with filters
-export const discoverMovies = async ({ query, genre, year, sort, rating, page = 1 }) => {
+export const discoverMovies = async ({ query, genre, year, year_gte, year_lte, language, sort, rating, page = 1 }) => {
   let results, totalPages, totalResults;
 
   if (query?.trim()) {
-    // Text search
     const data = await get("/search/movie", {
       query: query.trim(),
       include_adult: false,
       page,
       ...(year && { year }),
+      ...(language && { language }),
     });
     let movies = data.results || [];
+    if (genre)    movies = movies.filter(m => m.genre_ids?.includes(Number(genre)));
+    if (rating)   movies = movies.filter(m => m.vote_average >= Number(rating));
+    if (language) movies = movies.filter(m => m.original_language === language);
 
-    // Apply client-side filters
-    if (genre) movies = movies.filter(m => m.genre_ids?.includes(Number(genre)));
-    if (rating) movies = movies.filter(m => m.vote_average >= Number(rating));
-
-    results = movies.filter(m => m.poster_path);
-    totalPages = data.total_pages || 1;
+    results      = movies.filter(m => m.poster_path);
+    totalPages   = data.total_pages || 1;
     totalResults = data.total_results || results.length;
   } else {
-    // Discover with filters
     const params = {
       sort_by: sort || "popularity.desc",
       page,
       include_adult: false,
       "vote_count.gte": 50,
     };
-    if (genre) params.with_genres = genre;
-    if (year) params.primary_release_year = year;
-    if (rating) params["vote_average.gte"] = rating;
+    if (genre)     params.with_genres            = genre;
+    if (year)      params.primary_release_year   = year;
+    if (year_gte)  params["primary_release_date.gte"] = `${year_gte}-01-01`;
+    if (year_lte)  params["primary_release_date.lte"] = `${year_lte}-12-31`;
+    if (language)  params.with_original_language = language;
+    if (rating)    params["vote_average.gte"]    = rating;
 
-    const data = await get("/discover/movie", params);
-    results = (data.results || []).filter(m => m.poster_path);
-    totalPages = data.total_pages || 1;
+    const data   = await get("/discover/movie", params);
+    results      = (data.results || []).filter(m => m.poster_path);
+    totalPages   = data.total_pages || 1;
     totalResults = data.total_results || results.length;
   }
 

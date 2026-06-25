@@ -1,21 +1,16 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
-import { api, getErrorMessage } from "../lib/api";
+import { useState, useContext } from "react";
+import toast from "react-hot-toast";
+import { useNavigate, Link } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext.jsx";
+import { api } from "../lib/api";
 
 const Login = () => {
-  const { user, loginUser } = useAuth();
+  const { loginUser } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const redirectTo = location.state?.from?.pathname || "/";
-
-  useEffect(() => {
-    if (user) navigate(redirectTo, { replace: true });
-  }, [user, navigate, redirectTo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,10 +18,13 @@ const Login = () => {
     setError("");
     try {
       const res = await api.post("/auth/login", { email, password });
-      loginUser(res.data);
-      navigate(redirectTo, { replace: true });
+      loginUser({ token: res.data.token, user: res.data.user });
+      toast.success(`Welcome back, ${res.data.user.name}! 🎬`);
+      navigate("/");
     } catch (err) {
-      setError(getErrorMessage(err, "Login failed. Check your credentials."));
+      const msg = err.response?.data?.message || "Login failed. Check your credentials.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -93,12 +91,17 @@ const Login = () => {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-red-400 hover:text-red-300 font-semibold transition-colors">
-              Create one
+          <div className="flex items-center justify-between mt-6">
+            <p className="text-sm text-gray-500">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-red-400 hover:text-red-300 font-semibold transition-colors">
+                Create one
+              </Link>
+            </p>
+            <Link to="/forgot-password" className="text-sm text-gray-500 hover:text-gray-300 transition-colors">
+              Forgot password?
             </Link>
-          </p>
+          </div>
         </div>
 
         <p className="text-center text-xs text-gray-700 mt-6">
