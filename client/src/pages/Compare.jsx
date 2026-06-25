@@ -51,7 +51,7 @@ function SearchBox({ label, selected, onSelect }) {
         <img
           src={`https://image.tmdb.org/t/p/w500${selected.poster_path}`}
           alt={selected.title}
-          className="w-full h-72 object-cover"
+          className="w-full h-72 object-cover object-top"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4">
