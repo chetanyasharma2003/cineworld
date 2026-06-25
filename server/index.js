@@ -116,6 +116,8 @@ app.use(cors({
     if (!origin) return callback(null, true);
     if (allowed.includes(origin)) return callback(null, true);
     if (!IS_PROD && origin.startsWith("http://localhost:")) return callback(null, true);
+    // Allow all Vercel preview deployments for this project
+    if (origin.match(/^https:\/\/cineworld(-[a-z0-9]+)*-chetanya-s-projects\.vercel\.app$/)) return callback(null, true);
     return IS_PROD
       ? callback(new Error(`CORS: origin ${origin} not allowed`))
       : callback(null, true);
