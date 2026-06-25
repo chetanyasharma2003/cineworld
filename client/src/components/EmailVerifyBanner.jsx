@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 export default function EmailVerifyBanner() {
   const { user } = useAuth();
   const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem("ev_banner_dismissed") === "1"
+    () => localStorage.getItem("ev_banner_dismissed") === "1"
   );
   const [sending, setSending] = useState(false);
 
@@ -25,21 +25,20 @@ export default function EmailVerifyBanner() {
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem("ev_banner_dismissed", "1");
+    localStorage.setItem("ev_banner_dismissed", "1");
     setDismissed(true);
   };
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[60] bg-yellow-500/10 border-b border-yellow-500/30 backdrop-blur-sm">
-      <div className="max-w-5xl mx-auto px-6 py-2.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 text-sm">
+      <div className="max-w-5xl mx-auto px-4 py-2 flex flex-col sm:flex-row sm:items-center gap-2">
+        <div className="flex items-center gap-2 text-sm flex-1">
           <span className="text-yellow-400 shrink-0">⚠️</span>
-          <p className="text-yellow-200">
-            Your email <span className="font-semibold">{user.email}</span> is not verified.
-            Some features may be limited.
+          <p className="text-yellow-200 text-xs sm:text-sm">
+            Email not verified. <span className="hidden sm:inline">Some features may be limited.</span>
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleResend}
             disabled={sending}
@@ -49,7 +48,7 @@ export default function EmailVerifyBanner() {
           </button>
           <button
             onClick={handleDismiss}
-            className="text-gray-500 hover:text-gray-300 transition-colors text-lg leading-none"
+            className="text-gray-400 hover:text-white transition-colors text-xl leading-none px-2 py-1"
             aria-label="Dismiss"
           >
             ✕
