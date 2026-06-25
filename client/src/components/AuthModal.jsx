@@ -54,11 +54,12 @@ function AuthModal({ closeModal }) {
           <input
             type="password"
             name="password"
-            placeholder="Password"
+            placeholder={isLogin ? "Password" : "Min. 8 characters"}
             value={form.password}
             onChange={handleChange}
             className="p-2 rounded bg-gray-800 text-white"
             required
+            minLength={isLogin ? undefined : 8}
           />
           <button type="submit" className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">
             {isLogin ? "Login" : "Signup"}

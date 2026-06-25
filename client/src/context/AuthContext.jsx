@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { api, API_BASE_URL } from "../lib/api";
 
 export const AuthContext = createContext();
 
@@ -13,8 +13,39 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
   });
+
   const [token, setToken] = useState(() => localStorage.getItem("token") || null);
-  const [authLoading, setAuthLoading] = useState(Boolean(localStorage.getItem("token")));
+  // authLoading = true while we verify the token on first boot
+  const [authLoading, setAuthLoading] = useState(() => !!localStorage.getItem("token"));
+  const refreshTimerRef = useRef(null);
+
+  // On first mount: if we have a stored token, silently refresh it to confirm it's still valid
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken) { setAuthLoading(false); return; }
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: "POST", credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem("token", data.token);
+          setToken(data.token);
+        } else {
+          // Refresh failed — clear everything
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setToken(null);
+          setUser(null);
+        }
+      } catch {
+        // Network error — keep existing token optimistically
+      } finally {
+        setAuthLoading(false);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (token) localStorage.setItem("token", token);
@@ -26,45 +57,50 @@ export const AuthProvider = ({ children }) => {
     else localStorage.removeItem("user");
   }, [user]);
 
+  // Listen for forced logout triggered by 401 interceptor when refresh also fails
   useEffect(() => {
-    let cancelled = false;
+    const handler = () => {
+      clearInterval(refreshTimerRef.current);
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener("auth:logout", handler);
+    return () => window.removeEventListener("auth:logout", handler);
+  }, []);
 
-    const verifySession = async () => {
-      if (!token) {
-        setAuthLoading(false);
-        return;
-      }
-
+  // Auto-refresh access token every 13 minutes (before 15min expiry)
+  useEffect(() => {
+    if (!token) return;
+    const refresh = async () => {
       try {
-        const res = await api.get("/auth/me");
-        if (!cancelled) setUser(res.data.user);
-      } catch {
-        if (!cancelled) {
-          setToken(null);
-          setUser(null);
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: "POST", credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem("token", data.token);
+          setToken(data.token);
+        } else {
+          logoutUser();
         }
-      } finally {
-        if (!cancelled) setAuthLoading(false);
-      }
+      } catch {}
     };
-
-    verifySession();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+    refreshTimerRef.current = setInterval(refresh, 13 * 60 * 1000);
+    return () => clearInterval(refreshTimerRef.current);
+  }, [!!token]);
 
   const loginUser = (payload) => {
-    setToken(payload.token);
-    setUser(payload.user);
-    setAuthLoading(false);
+    if (payload.token) { localStorage.setItem("token", payload.token); setToken(payload.token); }
+    if (payload.user)  { localStorage.setItem("user", JSON.stringify(payload.user)); setUser(payload.user); }
   };
 
   const logoutUser = () => {
+    api.post("/auth/logout").catch(() => {});
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    clearInterval(refreshTimerRef.current);
     setToken(null);
     setUser(null);
-    setAuthLoading(false);
   };
 
   return (

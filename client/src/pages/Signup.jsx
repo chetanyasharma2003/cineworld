@@ -1,31 +1,35 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
-import { api, getErrorMessage } from "../lib/api";
+import { API_BASE_URL } from "../lib/api";
 
 const Signup = () => {
-  const { user, loginUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) navigate("/", { replace: true });
-  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const res = await api.post("/auth/signup", { name, email, password });
-      loginUser(res.data);
-      navigate("/");
+      const res = await axios.post(`${API_BASE_URL}/auth/signup`, { name, email, password });
+      if (res.data.emailVerificationSent) {
+        setVerificationSent(true);
+        toast.success("Account created! Check your email to verify.");
+      } else {
+        toast.success("Account created! Please sign in.");
+        navigate("/login");
+      }
     } catch (err) {
-      setError(getErrorMessage(err, "Signup failed. Please try again."));
+      const msg = err.response?.data?.message || "Signup failed. Please try again.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -45,6 +49,25 @@ const Signup = () => {
 
         {/* Card */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+
+          {verificationSent ? (
+            <div className="text-center py-4">
+              <div className="text-5xl mb-4">📧</div>
+              <h2 className="text-xl font-black mb-2">Check your email</h2>
+              <p className="text-gray-400 text-sm mb-4">
+                We sent a verification link to <span className="text-white font-semibold">{email}</span>.
+                Click the link to activate your account.
+              </p>
+              <p className="text-xs text-gray-600 mb-6">Link expires in 24 hours.</p>
+              <button
+                onClick={() => navigate("/login")}
+                className="w-full py-3 bg-red-600 hover:bg-red-500 rounded-xl font-semibold text-sm transition-all"
+              >
+                Go to Login
+              </button>
+            </div>
+          ) : (
+          <>
           <h2 className="text-2xl font-black mb-1">Create account</h2>
           <p className="text-gray-400 text-sm mb-6">Join CineWorld — it's free</p>
 
@@ -81,12 +104,12 @@ const Signup = () => {
               <label className="text-xs text-gray-400 font-medium mb-1.5 block">Password</label>
               <input
                 type="password"
-                placeholder="Min. 6 characters"
+                placeholder="Min. 8 characters"
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:border-red-500/60 transition-all placeholder-gray-600"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
 
@@ -110,6 +133,8 @@ const Signup = () => {
               Sign in
             </Link>
           </p>
+          </>
+          )}
         </div>
 
         <p className="text-center text-xs text-gray-700 mt-6">

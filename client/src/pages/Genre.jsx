@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { api } from "../lib/api";
 import Navbar from "../components/Navbar";
+import CertBadge from "../components/CertBadge";
 
 const GENRES = {
   action:      { id: 28,    label: "Action",        emoji: "💥", color: "from-red-900/40" },
@@ -49,10 +49,11 @@ function MovieCard({ movie, onClick }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-200">
         <div className="absolute bottom-0 left-0 right-0 p-3">
           <p className="text-xs font-bold line-clamp-2 leading-tight">{movie.title}</p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-yellow-400 text-xs">★ {movie.vote_average?.toFixed(1)}</span>
             <span className="text-gray-500 text-xs">•</span>
             <span className="text-gray-400 text-xs">{movie.release_date?.split("-")[0]}</span>
+            {movie.certification && <CertBadge cert={movie.certification} />}
           </div>
         </div>
       </div>
@@ -89,21 +90,15 @@ export default function Genre() {
     if (!genre) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        sort: sortBy,
-        page: pageNum,
-      });
-      if (genre.lang) {
-        params.set("lang", genre.lang);
-      } else {
-        params.set("genre", genre.id);
-      }
+      const { tmdbGet } = await import("../lib/tmdb");
+      const params = genre.lang
+        ? { with_original_language: genre.lang, region: "IN", sort_by: sortBy, page: pageNum, "vote_count.gte": 20, without_genres: 16, certification_country: "IN" }
+        : { with_genres: genre.id, sort_by: sortBy, page: pageNum, "vote_count.gte": 50, certification_country: "IN" };
+      const data = await tmdbGet("/discover/movie", params);
 
-      const res = await api.get(`/movies/discover?${params}`);
-      const data = res.data;
-
-      setMovies(prev => pageNum === 1 ? (data.results || []) : [...prev, ...(data.results || [])]);
-      setTotal(data.totalPages || 1);
+      const filtered = (data.results || []).filter(m => m.poster_path);
+      setMovies(prev => pageNum === 1 ? filtered : [...prev, ...filtered]);
+      setTotal(data.total_pages || 1);
       setInitial(false);
     } catch (err) {
       console.error(err);

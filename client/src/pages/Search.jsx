@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import Navbar from "../components/Navbar";
+import CertBadge from "../components/CertBadge";
+import { useDebounce } from "../hooks/useDebounce";
 
 const GENRES = [
   { id: "", label: "All Genres" },
@@ -25,9 +27,34 @@ const SORT_OPTIONS = [
   { value: "vote_average.desc", label: "Highest Rated" },
   { value: "release_date.desc", label: "Newest First" },
   { value: "release_date.asc", label: "Oldest First" },
+  { value: "revenue.desc", label: "Highest Grossing" },
 ];
 
-const YEARS = ["", ...Array.from({ length: 35 }, (_, i) => 2024 - i)];
+const YEARS = ["", ...Array.from({ length: 36 }, (_, i) => new Date().getFullYear() - i)];
+
+const DECADES = [
+  { value: "", label: "Any Decade" },
+  { value: "2020", label: "2020s" },
+  { value: "2010", label: "2010s" },
+  { value: "2000", label: "2000s" },
+  { value: "1990", label: "1990s" },
+  { value: "1980", label: "1980s" },
+  { value: "1970", label: "1970s" },
+];
+
+const LANGUAGES = [
+  { value: "", label: "All Languages" },
+  { value: "en", label: "English" },
+  { value: "hi", label: "Hindi" },
+  { value: "ko", label: "Korean" },
+  { value: "ja", label: "Japanese" },
+  { value: "fr", label: "French" },
+  { value: "es", label: "Spanish" },
+  { value: "it", label: "Italian" },
+  { value: "de", label: "German" },
+  { value: "zh", label: "Chinese" },
+  { value: "pt", label: "Portuguese" },
+];
 
 function MovieCard({ movie, onClick }) {
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -55,10 +82,11 @@ function MovieCard({ movie, onClick }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-200">
         <div className="absolute bottom-0 left-0 right-0 p-3">
           <p className="text-sm font-bold line-clamp-2 leading-tight">{movie.title}</p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-yellow-400 text-xs">★ {movie.vote_average?.toFixed(1)}</span>
             <span className="text-gray-400 text-xs">•</span>
             <span className="text-gray-400 text-xs">{movie.release_date?.split("-")[0]}</span>
+            {movie.certification && <CertBadge cert={movie.certification} />}
           </div>
         </div>
       </div>
@@ -78,14 +106,43 @@ function Search() {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [genre, setGenre] = useState(searchParams.get("genre") || "");
   const [year, setYear] = useState(searchParams.get("year") || "");
+  const [decade, setDecade] = useState(searchParams.get("decade") || "");
+  const [language, setLanguage] = useState(searchParams.get("lang") || "");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "popularity.desc");
   const [minRating, setMinRating] = useState(searchParams.get("rating") || "");
+
+  const debouncedQuery = useDebounce(query, 400);
+
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchHistory, setSearchHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("cw_search_history") || "[]"); } catch { return []; }
+  });
+
+  const saveToHistory = (term) => {
+    if (!term.trim()) return;
+    setSearchHistory(prev => {
+      const updated = [term, ...prev.filter(t => t !== term)].slice(0, 8);
+      localStorage.setItem("cw_search_history", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const clearHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem("cw_search_history");
+  };
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+
+  // AI search mode
+  const [aiMode, setAiMode] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiInterpretation, setAiInterpretation] = useState("");
 
   const fetchResults = useCallback(async (resetPage = true) => {
     setLoading(true);
@@ -94,9 +151,11 @@ function Search() {
 
     try {
       const params = new URLSearchParams();
-      if (query.trim()) params.set("query", query.trim());
+      if (debouncedQuery.trim()) params.set("query", debouncedQuery.trim());
       if (genre) params.set("genre", genre);
       if (year) params.set("year", year);
+      if (decade && !year) { params.set("year_gte", decade); params.set("year_lte", String(parseInt(decade) + 9)); }
+      if (language) params.set("language", language);
       if (sortBy) params.set("sort", sortBy);
       if (minRating) params.set("rating", minRating);
       params.set("page", currentPage);
@@ -117,19 +176,22 @@ function Search() {
     } finally {
       setLoading(false);
     }
-  }, [query, genre, year, sortBy, minRating, page]);
+  }, [debouncedQuery, genre, year, decade, language, sortBy, minRating, page]);
 
-  // Fetch on filter change
+  // Fetch on filter change (query is debounced, filters are immediate)
   useEffect(() => {
     const params = {};
-    if (query) params.q = query;
+    if (debouncedQuery) params.q = debouncedQuery;
     if (genre) params.genre = genre;
     if (year) params.year = year;
+    if (decade) params.decade = decade;
+    if (language) params.lang = language;
     if (sortBy !== "popularity.desc") params.sort = sortBy;
     if (minRating) params.rating = minRating;
     setSearchParams(params);
     fetchResults(true);
-  }, [query, genre, year, sortBy, minRating]);
+    if (debouncedQuery.trim()) saveToHistory(debouncedQuery.trim());
+  }, [debouncedQuery, genre, year, decade, language, sortBy, minRating]);
 
   const loadMore = async () => {
     const nextPage = page + 1;
@@ -137,9 +199,11 @@ function Search() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (query.trim()) params.set("query", query.trim());
+      if (debouncedQuery.trim()) params.set("query", debouncedQuery.trim());
       if (genre) params.set("genre", genre);
       if (year) params.set("year", year);
+      if (decade && !year) { params.set("year_gte", decade); params.set("year_lte", String(parseInt(decade) + 9)); }
+      if (language) params.set("language", language);
       if (sortBy) params.set("sort", sortBy);
       if (minRating) params.set("rating", minRating);
       params.set("page", nextPage);
@@ -157,11 +221,50 @@ function Search() {
     setQuery("");
     setGenre("");
     setYear("");
+    setDecade("");
+    setLanguage("");
     setSortBy("popularity.desc");
     setMinRating("");
   };
 
-  const hasFilters = query || genre || year || minRating || sortBy !== "popularity.desc";
+  const hasFilters = query || genre || year || decade || language || minRating || sortBy !== "popularity.desc";
+
+  const handleAISearch = async () => {
+    if (!aiQuery.trim() || aiLoading) return;
+    setAiLoading(true);
+    setAiInterpretation("");
+    try {
+      const res = await api.post("/ai/search", { query: aiQuery.trim() });
+      const params = res.data.params || {};
+
+      // Apply Claude's interpretation to filter state
+      if (params.searchQuery) { setQuery(params.searchQuery); }
+      if (params.with_genres) { const id = params.with_genres.split(",")[0]; setGenre(id); }
+      if (params.primary_release_year) { setYear(params.primary_release_year); setDecade(""); }
+      if (params["primary_release_date.gte"]) {
+        const yr = params["primary_release_date.gte"].slice(0, 4);
+        const nearestDecade = String(Math.floor(parseInt(yr) / 10) * 10);
+        setDecade(nearestDecade); setYear("");
+      }
+      if (params.with_original_language) setLanguage(params.with_original_language);
+      if (params.sort_by) setSortBy(params.sort_by);
+      if (params["vote_average.gte"]) setMinRating(params["vote_average.gte"]);
+
+      // Build a human-readable summary
+      const parts = [];
+      if (params.searchQuery) parts.push(`"${params.searchQuery}"`);
+      if (params.with_genres) parts.push("filtered by genre");
+      if (params.primary_release_year) parts.push(`from ${params.primary_release_year}`);
+      if (params["primary_release_date.gte"]) parts.push(`from the ${params["primary_release_date.gte"].slice(0, 3)}0s`);
+      if (params.with_original_language) parts.push(`in ${params.with_original_language.toUpperCase()}`);
+      setAiInterpretation(parts.length ? parts.join(", ") : "applied AI filters");
+    } catch (err) {
+      const msg = err.response?.data?.error || "";
+      setAiInterpretation(msg.includes("not configured") ? "AI not configured on server" : "AI search failed — try again");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white">
@@ -177,25 +280,94 @@ function Search() {
           </p>
         </div>
 
+        {/* AI / Normal toggle */}
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={() => { setAiMode(false); setAiInterpretation(""); }}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${!aiMode ? "bg-red-600 text-white" : "bg-white/5 text-gray-400 hover:text-white"}`}
+          >
+            🔍 Normal Search
+          </button>
+          <button
+            onClick={() => { setAiMode(true); setAiInterpretation(""); }}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 ${aiMode ? "bg-gradient-to-r from-purple-600 to-red-600 text-white" : "bg-white/5 text-gray-400 hover:text-white border border-white/10"}`}
+          >
+            <span>✦</span> AI Search
+          </button>
+          {aiInterpretation && (
+            <span className="text-xs text-purple-400 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full">
+              ✦ AI found: {aiInterpretation}
+            </span>
+          )}
+        </div>
+
         {/* Search Bar */}
         <div className="relative mb-6">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search movies by title..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 outline-none focus:border-red-500/60 focus:bg-white/8 transition-all text-lg"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
+          {aiMode ? (
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 text-base">✦</span>
+                <input
+                  type="text"
+                  placeholder="Describe what you want to watch... e.g. '90s sci-fi with time travel'"
+                  value={aiQuery}
+                  onChange={(e) => setAiQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAISearch()}
+                  className="w-full pl-12 pr-4 py-4 bg-purple-900/10 border border-purple-500/30 rounded-2xl text-white placeholder-gray-600 outline-none focus:border-purple-500/60 transition-all text-base"
+                />
+              </div>
+              <button
+                onClick={handleAISearch}
+                disabled={aiLoading || !aiQuery.trim()}
+                className="px-6 py-4 bg-gradient-to-r from-purple-600 to-red-600 rounded-2xl text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-all whitespace-nowrap"
+              >
+                {aiLoading ? <span className="animate-spin inline-block">✦</span> : "Search ✦"}
+              </button>
+            </div>
+          ) : (
+            <>
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search movies by title..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 outline-none focus:border-red-500/60 focus:bg-white/8 transition-all text-lg"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              )}
+              {/* Search History Dropdown */}
+              {searchFocused && !query.trim() && searchHistory.length > 0 && (
+                <div className="absolute top-full mt-2 left-0 right-0 bg-[#141414] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50">
+                  <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between">
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Recent Searches</p>
+                    <button onClick={clearHistory} className="text-xs text-gray-600 hover:text-red-400 transition-colors">Clear all</button>
+                  </div>
+                  {searchHistory.map((term, i) => (
+                    <button
+                      key={i}
+                      onMouseDown={() => setQuery(term)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all text-left group border-b border-white/5 last:border-0"
+                    >
+                      <svg className="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{term}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -216,12 +388,34 @@ function Search() {
           {/* Year */}
           <select
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={(e) => { setYear(e.target.value); if (e.target.value) setDecade(""); }}
             className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:border-red-500/50 cursor-pointer hover:bg-white/8 transition-all"
           >
             <option value="" className="bg-[#1a1a1a]">All Years</option>
             {YEARS.filter(y => y !== "").map((y) => (
               <option key={y} value={y} className="bg-[#1a1a1a]">{y}</option>
+            ))}
+          </select>
+
+          {/* Decade */}
+          <select
+            value={decade}
+            onChange={(e) => { setDecade(e.target.value); if (e.target.value) setYear(""); }}
+            className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:border-red-500/50 cursor-pointer hover:bg-white/8 transition-all"
+          >
+            {DECADES.map(d => (
+              <option key={d.value} value={d.value} className="bg-[#1a1a1a]">{d.label}</option>
+            ))}
+          </select>
+
+          {/* Language */}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm outline-none focus:border-red-500/50 cursor-pointer hover:bg-white/8 transition-all"
+          >
+            {LANGUAGES.map(l => (
+              <option key={l.value} value={l.value} className="bg-[#1a1a1a]">{l.label}</option>
             ))}
           </select>
 

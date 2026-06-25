@@ -20,11 +20,11 @@ export const searchTmdbMovies = async (req, res) => {
   }
 };
 
-// ✅ NEW — Discover with filters
+// ✅ Discover with filters
 export const discoverTmdbMovies = async (req, res) => {
   try {
-    const { query, genre, year, sort, rating, page } = req.query;
-    const data = await discoverMovies({ query, genre, year, sort, rating, page: Number(page) || 1 });
+    const { query, genre, year, year_gte, year_lte, language, sort, rating, page } = req.query;
+    const data = await discoverMovies({ query, genre, year, year_gte, year_lte, language, sort, rating, page: Number(page) || 1 });
     res.json({ success: true, ...data });
   } catch (error) {
     res.status(502).json({ success: false, message: "Failed to discover movies" });

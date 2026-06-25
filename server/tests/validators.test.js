@@ -4,6 +4,7 @@ import {
   isValidEmail,
   normalizeEmail,
   sanitizeMovieForList,
+  sanitizeMovieForWatchlist,
   sanitizeText,
   validatePassword,
 } from "../utils/validators.js";
@@ -15,8 +16,8 @@ test("normalizes and validates email addresses", () => {
 });
 
 test("validates password length", () => {
-  assert.equal(validatePassword("12345"), "Password must be at least 6 characters long");
-  assert.equal(validatePassword("123456"), null);
+  assert.equal(validatePassword("1234567"), "Password must be at least 8 characters long");
+  assert.equal(validatePassword("12345678"), null);
 });
 
 test("sanitizes text and saved movies", () => {
@@ -28,5 +29,24 @@ test("sanitizes text and saved movies", () => {
     backdrop_path: "",
     release_date: "",
     vote_average: 7.8,
+    genre_ids: [],
+    overview: "",
+    _mediaType: "movie",
   });
+});
+
+test("sanitizes watchlist movies with status", () => {
+  assert.deepEqual(
+    sanitizeMovieForWatchlist({ id: 42, title: "Inception" }, "watching"),
+    { id: 42, title: "Inception", poster_path: "", backdrop_path: "", release_date: "", vote_average: 0, genre_ids: [], overview: "", status: "watching", _mediaType: "movie" },
+  );
+
+  const result = sanitizeMovieForWatchlist({ id: 1, title: "Test" });
+  assert.equal(result.status, "want_to_watch");
+  assert.equal(result._mediaType, "movie");
+
+  assert.throws(
+    () => sanitizeMovieForWatchlist({ id: 1, title: "Test" }, "completed"),
+    /status must be one of/,
+  );
 });

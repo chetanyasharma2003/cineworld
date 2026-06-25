@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { api, getErrorMessage } from "../lib/api";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext.jsx";
 
 // Star Picker Component
@@ -69,7 +70,51 @@ function RatingDistribution({ distribution, totalRatings }) {
   );
 }
 
-function ReviewForm({ movieId, setReviews, openLogin, ratingData, setRatingData }) {
+// Inline edit component for existing reviews
+export function ReviewEditInline({ review, onSave, onCancel }) {
+  const [content, setContent] = useState(review.content);
+  const [rating, setRating] = useState(review.rating || null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async () => {
+    if (content.trim().length < 2) return;
+    setLoading(true);
+    try {
+      const res = await api.put(`/reviews/${review._id}`, { content, rating });
+      onSave(res.data);
+      toast.success("Review updated!");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Could not update review."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 p-4 bg-white/5 border border-yellow-500/30 rounded-2xl">
+      <p className="text-xs text-yellow-400 font-semibold uppercase tracking-widest">Editing your review</p>
+      <StarPicker value={rating} onChange={setRating} />
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        rows={3}
+        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white outline-none focus:border-red-500/60 transition-all resize-none"
+      />
+      <div className="flex gap-2">
+        <button onClick={handleSave} disabled={loading || content.trim().length < 2}
+          className="flex-1 py-2 bg-red-600 hover:bg-red-500 disabled:bg-gray-800 disabled:text-gray-600 rounded-xl text-sm font-semibold transition-all">
+          {loading ? "Saving..." : "Save Changes"}
+        </button>
+        <button onClick={onCancel}
+          className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl text-sm transition-all">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReviewForm({ movieId, movieTitle = "", setReviews, openLogin, ratingData, setRatingData }) {
   const { user } = useAuth();
   const [content, setContent] = useState("");
   const [rating, setRating] = useState(null);
@@ -84,14 +129,14 @@ function ReviewForm({ movieId, setReviews, openLogin, ratingData, setRatingData 
     try {
       setLoading(true);
       setError("");
-      const res = await api.post("/reviews", { movieId, content, rating });
+      const res = await api.post("/reviews", { movieId, movieTitle, content, rating });
       setReviews((prev) => [res.data, ...prev]);
       setContent("");
       setRating(null);
       setSubmitted(true);
+      toast.success("Review submitted! ⭐");
       setTimeout(() => setSubmitted(false), 3000);
 
-      // Update rating data live
       if (rating && setRatingData) {
         try {
           const ratingRes = await api.get(`/reviews/${movieId}/rating`);
@@ -99,7 +144,9 @@ function ReviewForm({ movieId, setReviews, openLogin, ratingData, setRatingData 
         } catch {}
       }
     } catch (err) {
-      setError(getErrorMessage(err, "Could not submit your review."));
+      const msg = getErrorMessage(err, "Could not submit your review.");
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

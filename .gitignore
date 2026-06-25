@@ -25,3 +25,9 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 !.vscode/tasks.json
+
+# User uploads (runtime files — not source code)
+server/uploads/
+
+# Claude Code session data
+.claude/
