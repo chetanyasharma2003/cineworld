@@ -286,7 +286,7 @@ export default function MovieDetail() {
       </Helmet>
 
       {/* ── HERO ── */}
-      <div className="relative w-full overflow-hidden" style={{ height: "65vh" }}>
+      <div className="relative w-full overflow-hidden" style={{ minHeight: "280px", height: "65vh" }}>
         <img
           src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
           alt={movie.title}
@@ -585,7 +585,7 @@ export default function MovieDetail() {
                           <img src={actor.profile_path
                             ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
                             : `https://ui-avatars.com/api/?name=${encodeURIComponent(actor.name)}&background=222&color=fff`}
-                            alt={actor.name} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
+                            alt={actor.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-all" />
                         </div>
                         <p className="text-xs font-medium text-center line-clamp-1 group-hover:text-red-400 transition-colors">{actor.name}</p>
                         <p className="text-xs text-gray-600 text-center line-clamp-1 mt-0.5">{actor.character}</p>
@@ -767,7 +767,7 @@ export default function MovieDetail() {
                         <img src={actor.profile_path
                           ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
                           : `https://ui-avatars.com/api/?name=${encodeURIComponent(actor.name)}&background=222&color=fff`}
-                          alt={actor.name} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
+                          alt={actor.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-all" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold line-clamp-1 group-hover:text-red-400 transition-colors">{actor.name}</p>

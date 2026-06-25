@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import toast from "react-hot-toast";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -98,6 +99,10 @@ function Watchlist() {
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white pt-24 px-6 md:px-12 pb-16 relative overflow-hidden">
+      <Helmet>
+        <title>My Watchlist — CineWorld</title>
+        <meta name="description" content="Track movies you want to watch, are currently watching, or have already seen." />
+      </Helmet>
       <DynamicBg variant="purple" intensity="subtle" />
 
       {/* Header */}
