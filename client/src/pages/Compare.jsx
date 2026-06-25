@@ -19,7 +19,7 @@ function useMovieSearch() {
     try {
       const data = await tmdb(`/search/movie?query=${encodeURIComponent(q)}&page=1`);
       setResults((data.results || []).filter(m => m.poster_path).slice(0, 6));
-    } catch {}
+    } catch { /* ignore */ }
     finally { setSearching(false); }
   }, []);
 
@@ -135,7 +135,7 @@ export default function Compare() {
   const [movieB, setMovieB] = useState(null);
   const [fullA,  setFullA]  = useState(null);
   const [fullB,  setFullB]  = useState(null);
-  const [loading, setLoading] = useState(false);
+
   const [aiVerdict, setAiVerdict] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");

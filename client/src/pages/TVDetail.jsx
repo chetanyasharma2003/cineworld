@@ -175,7 +175,7 @@ export default function TVDetail() {
             <button
               onClick={async () => {
                 const shareData = { title: show.name, text: `Check out "${show.name}" on CineWorld!`, url: window.location.href };
-                if (navigator.share) { try { await navigator.share(shareData); } catch {} }
+                if (navigator.share) { try { await navigator.share(shareData); } catch { /* ignore */ } }
                 else { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); }
               }}
               className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-semibold text-sm transition-all hover:scale-105">

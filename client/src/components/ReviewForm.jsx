@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { api, getErrorMessage } from "../lib/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -141,7 +141,7 @@ function ReviewForm({ movieId, movieTitle = "", setReviews, openLogin, ratingDat
         try {
           const ratingRes = await api.get(`/reviews/${movieId}/rating`);
           setRatingData(ratingRes.data);
-        } catch {}
+        } catch { /* ignore */ }
       }
     } catch (err) {
       const msg = getErrorMessage(err, "Could not submit your review.");

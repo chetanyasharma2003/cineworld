@@ -147,7 +147,7 @@ export default function TVShows() {
     try {
       const res = await tmdb(`/discover/tv?with_genres=${genre.id}&sort_by=popularity.desc`);
       setGenreShows(res.results || []);
-    } catch {}
+    } catch { /* ignore */ }
     finally { setGenreLoading(false); }
   };
 

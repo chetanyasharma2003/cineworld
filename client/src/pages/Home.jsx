@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from "../components/Navbar";
 import Row from "../components/Row";
@@ -39,7 +39,7 @@ async function getPersonalizedRecommendations(myList) {
       try {
         const data = await tmdbGet(`/movie/${movie.id}`);
         ids = (data.genres || []).map(g => g.id);
-      } catch {}
+      } catch { /* ignore */ }
     }
 
     ids.forEach(id => {
@@ -100,7 +100,7 @@ async function resolveRec(rec) {
         ? hits.find(m => m.release_date?.startsWith(String(rec.year))) || hits[0]
         : hits[0];
       return { ...match, _aiReason: rec.reason };
-    } catch {}
+    } catch { /* ignore */ }
   }
   return null;
 }
