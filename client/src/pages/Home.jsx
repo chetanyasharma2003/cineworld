@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 import Navbar from "../components/Navbar";
 import Row from "../components/Row";
 import Banner from "../components/Banner";
@@ -305,6 +306,13 @@ function Home() {
 
   return (
     <div className="bg-[#060c18] min-h-screen" style={{ color: "#f1f5f9" }}>
+      <Helmet>
+        <title>CineWorld — Discover Movies & TV Shows</title>
+        <meta name="description" content="Discover trending movies and TV shows, get AI-powered recommendations, and track your watchlist on CineWorld." />
+        <meta property="og:title" content="CineWorld — Discover Movies & TV Shows" />
+        <meta property="og:description" content="AI-powered movie discovery platform with personalised recommendations, social follows, and more." />
+        <meta property="og:type" content="website" />
+      </Helmet>
       <Navbar />
       <Banner movies={sections.popular} />
 

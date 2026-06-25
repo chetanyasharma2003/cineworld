@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { api } from "../lib/api";
 import Navbar from "../components/Navbar";
 import CertBadge from "../components/CertBadge";
@@ -268,6 +269,10 @@ function Search() {
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white">
+      <Helmet>
+        <title>{searchParams.get("q") ? `"${searchParams.get("q")}" — CineWorld Search` : "Search Movies & TV — CineWorld"}</title>
+        <meta name="description" content="Search thousands of movies and TV shows on CineWorld. Use AI-powered natural language search to find exactly what you want." />
+      </Helmet>
       <Navbar />
 
       <div className="pt-24 px-6 md:px-12 pb-16">

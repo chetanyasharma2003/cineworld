@@ -35,6 +35,7 @@ export default function TVDetail() {
   const navigate = useNavigate();
 
   const [show, setShow]               = useState(null);
+  const [fetchError, setFetchError]   = useState(false);
   const [cast, setCast]               = useState([]);
   const [similar, setSimilar]         = useState([]);
   const [trailerKey, setTrailerKey]   = useState(null);
@@ -74,6 +75,7 @@ export default function TVDetail() {
         setTrailerKey(trailer?.key || null);
       } catch (err) {
         console.error(err);
+        setFetchError(true);
       }
     };
     fetchAll();
@@ -92,6 +94,18 @@ export default function TVDetail() {
     return () => document.removeEventListener("keydown", onEsc);
   }, []);
 
+  if (fetchError) return (
+    <div className="bg-[#0a0a0a] min-h-screen text-white">
+      <Navbar />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-gray-400">Failed to load show details.</p>
+        <button onClick={() => { setFetchError(false); setShow(null); window.location.reload(); }}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm transition-colors">
+          Try Again
+        </button>
+      </div>
+    </div>
+  );
   if (!show) return <><Navbar /><SkeletonTVDetail /></>;
 
   const year      = show.first_air_date?.split("-")[0];
