@@ -67,13 +67,12 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Split heavy vendor libs into separate chunks for better caching
-          'react-vendor': ['react', 'react-dom'],
-          'router': ['react-router-dom'],
-          'query': ['@tanstack/react-query'],
-          'ui-vendor': ['react-hot-toast', 'react-helmet-async'],
-          'http': ['axios'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'react-vendor';
+          if (id.includes('node_modules/react-router-dom/')) return 'router';
+          if (id.includes('node_modules/@tanstack/')) return 'query';
+          if (id.includes('node_modules/react-hot-toast/') || id.includes('node_modules/react-helmet-async/')) return 'ui-vendor';
+          if (id.includes('node_modules/axios/')) return 'http';
         },
       },
     },
