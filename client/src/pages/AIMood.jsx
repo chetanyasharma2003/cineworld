@@ -35,12 +35,12 @@ async function searchTMDB(title, year) {
       if (exact) return exact;
       const withPoster = results.find(m => m.poster_path);
       if (withPoster) return withPoster;
-    } catch {}
+    } catch { /* ignore */ }
   }
   return null;
 }
 
-function MovieCard({ movie, reason, navigate, index }) {
+function MovieCard({ movie, reason, navigate }) {
   return (
     <div
       onClick={() => navigate(`/movie/${movie.id}`)}

@@ -76,7 +76,7 @@ export default function Navbar() {
         const movies = (movRes.results || []).filter(m => m.poster_path).slice(0, 4).map(m => ({ ...m, _type: "movie" }));
         const people = (pepRes.results || []).filter(p => p.profile_path).slice(0, 3).map(p => ({ ...p, _type: "person" }));
         setResults([...people, ...movies]);
-      } catch {}
+      } catch { /* ignore */ }
     }, 350);
     return () => clearTimeout(delay);
   }, [query]);
@@ -87,7 +87,7 @@ export default function Navbar() {
       const res = await api.get("/notifications");
       setNotifications(res.data.notifications || []);
       setUnreadCount(res.data.unreadCount || 0);
-    } catch {}
+    } catch { /* ignore */ }
   }, [user]);
 
   useEffect(() => {
@@ -107,7 +107,7 @@ export default function Navbar() {
             const notif = JSON.parse(e.data);
             setNotifications(prev => [notif, ...prev].slice(0, 20));
             setUnreadCount(c => c + 1);
-          } catch {}
+          } catch { /* ignore */ }
         };
         es.onerror = () => es.close();
       } catch {
@@ -127,12 +127,12 @@ export default function Navbar() {
         await api.post("/notifications/mark-read");
         setUnreadCount(0);
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      } catch {}
+      } catch { /* ignore */ }
     }
   };
 
   const handleClearNotifs = async () => {
-    try { await api.delete("/notifications"); setNotifications([]); setUnreadCount(0); } catch {}
+    try { await api.delete("/notifications"); setNotifications([]); setUnreadCount(0); } catch { /* ignore */ }
   };
 
   const handleGenreEnter = () => { clearTimeout(genreTimerRef.current); clearTimeout(tvTimerRef.current); setShowGenreMenu(true); setShowTVMenu(false); };

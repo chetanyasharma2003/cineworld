@@ -20,13 +20,13 @@ async function searchTMDB(title, year) {
         if (match) return match;
       }
       return results[0];
-    } catch {}
+    } catch { /* ignore */ }
   }
   return null;
 }
 
 export default function AISimilarMovies({ movie }) {
-  const [recs, setRecs] = useState([]);
+  const [, setRecs] = useState([]);
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);

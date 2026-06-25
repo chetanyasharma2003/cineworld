@@ -78,7 +78,7 @@ export default function WatchlistChat() {
               });
             }
             if (data.done) break;
-          } catch {}
+          } catch { /* ignore */ }
         }
       }
 

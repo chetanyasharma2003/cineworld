@@ -27,7 +27,7 @@ export default function MovieOfTheDay() {
         const pick = results[getDailyIndex(results.length)];
         sessionStorage.setItem(cacheKey, JSON.stringify(pick));
         setMovie(pick);
-      } catch {}
+      } catch { /* ignore */ }
     };
     fetch_();
   }, []);

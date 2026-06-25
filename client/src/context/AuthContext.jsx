@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           logoutUser();
         }
-      } catch {}
+      } catch { /* ignore */ }
     };
     refreshTimerRef.current = setInterval(refresh, 13 * 60 * 1000);
     return () => clearInterval(refreshTimerRef.current);

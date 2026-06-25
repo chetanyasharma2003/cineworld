@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 import Row from "../components/Row";
 import ReviewForm, { ReviewEditInline } from "../components/ReviewForm";
 import AuthModal from "../components/AuthModal";
-import { api, imageUrl } from "../lib/api";
+import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext.jsx";
 
 import { tmdbGet } from "../lib/tmdb";
@@ -231,7 +231,7 @@ export default function MovieDetail() {
         try {
           const rtRes = await api.get(`/reviews/${id}/rating`);
           setRatingData(rtRes.data);
-        } catch {}
+        } catch { /* ignore */ }
       } catch (err) {
         console.error(err);
       }
@@ -255,8 +255,8 @@ export default function MovieDetail() {
   const year     = movie.release_date?.split("-")[0];
   const runtime  = `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`;
   const director = crew.find(c => c.job === "Director");
-  const writers  = crew.filter(c => ["Writer","Screenplay","Story"].includes(c.job)).slice(0, 3);
-  const producers= crew.filter(c => c.job === "Producer").slice(0, 3);
+  const _writers  = crew.filter(c => ["Writer","Screenplay","Story"].includes(c.job)).slice(0, 3);
+  const _producers= crew.filter(c => c.job === "Producer").slice(0, 3);
   const hasIN    = providers?.IN;
   const hasUS    = providers?.US;
   const current  = hasIN || hasUS || null;
@@ -346,7 +346,7 @@ export default function MovieDetail() {
             <button
               onClick={async () => {
                 const shareData = { title: movie.title, text: `Check out "${movie.title}" on CineWorld!`, url: window.location.href };
-                if (navigator.share) { try { await navigator.share(shareData); } catch {} }
+                if (navigator.share) { try { await navigator.share(shareData); } catch { /* ignore */ } }
                 else { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); }
               }}
               className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl font-semibold text-sm transition-all hover:scale-105">
@@ -838,7 +838,7 @@ export default function MovieDetail() {
                   ["Tagline", movie.tagline],
                   ["TMDB ID", movie.id],
                   movie.imdb_id && ["IMDb ID", movie.imdb_id],
-                ].filter(Boolean).filter(([_, v]) => v).map(([label, value]) => (
+                ].filter(Boolean).filter(([, v]) => v).map(([label, value]) => (
                   <div key={label} className="flex gap-4 py-3 border-b border-white/5">
                     <span className="text-gray-500 text-sm w-40 shrink-0">{label}</span>
                     <span className="text-sm text-gray-200">{value}</span>

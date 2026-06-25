@@ -69,7 +69,7 @@ export default function Profile() {
               r._id === review._id ? { ...r, movieTitle: data.title } : r
             ));
           }
-        } catch {}
+        } catch { /* ignore */ }
         await new Promise(res => setTimeout(res, 200)); // small gap between calls
       }
     })();
@@ -91,7 +91,7 @@ export default function Profile() {
       try {
         const listRes = await api.get("/users/me/list");
         setMyList(listRes.data.movies || []);
-      } catch {}
+      } catch { /* ignore */ }
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function Profile() {
       .filter(Boolean);
   };
 
-  const avgRating = myList.length
+  const _avgRating = myList.length
     ? (myList.reduce((sum, m) => sum + (m.vote_average || 0), 0) / myList.length).toFixed(1)
     : "—";
 
@@ -143,7 +143,7 @@ export default function Profile() {
     try {
       await api.delete(`/reviews/${reviewId}`);
       setMyReviews(prev => prev.filter(r => r._id !== reviewId));
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const handleAvatarUpload = async (e) => {

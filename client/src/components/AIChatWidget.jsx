@@ -49,7 +49,7 @@ async function streamChat(movieContext, message, history, onChunk, onDone, onErr
         if (data.text)  onChunk(data.text);
         if (data.error) onError(data.error);
         if (data.done)  onDone();
-      } catch {}
+      } catch { /* ignore parse errors */ }
     }
   }
   onDone();
@@ -62,6 +62,7 @@ export default function AIChatWidget({ movie }) {
   const [streaming, setStreaming] = useState(false);
   // Conversation history for memory: [{user, assistant}]
   const historyRef = useRef([]);
+  const [historyLen, setHistoryLen] = useState(0);
   const bottomRef  = useRef(null);
   const inputRef   = useRef(null);
 
@@ -119,6 +120,7 @@ export default function AIChatWidget({ movie }) {
           ...historyRef.current,
           { user: msg, assistant: assistantText },
         ].slice(-6); // keep last 6 turns
+        setHistoryLen(historyRef.current.length);
 
         setMessages((prev) => {
           const updated = [...prev];
@@ -280,9 +282,9 @@ export default function AIChatWidget({ movie }) {
                 )}
               </button>
             </div>
-            {historyRef.current.length > 0 && (
+            {historyLen > 0 && (
               <p className="text-[10px] text-gray-600 mt-1 text-center">
-                {historyRef.current.length} turn{historyRef.current.length > 1 ? "s" : ""} remembered
+                {historyLen} turn{historyLen > 1 ? "s" : ""} remembered
               </p>
             )}
           </div>
