@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import BackToTop from "./components/BackToTop";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
