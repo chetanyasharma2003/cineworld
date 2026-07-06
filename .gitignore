@@ -29,5 +29,11 @@ pnpm-debug.log*
 # User uploads (runtime files — not source code)
 server/uploads/
 
+# Archives / backups (not source code)
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
 # Claude Code session data
 .claude/
