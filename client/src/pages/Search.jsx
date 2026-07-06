@@ -96,6 +96,13 @@ function MovieCard({ movie, onClick }) {
       <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-xs text-yellow-400 font-bold">
         ★ {movie.vote_average?.toFixed(1)}
       </div>
+
+      {/* Media-type badge (only shown for TV shows) */}
+      {movie.media_type === "tv" && (
+        <div className="absolute top-2 left-2 bg-sky-500/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] text-white font-bold uppercase tracking-wide">
+          TV
+        </div>
+      )}
     </div>
   );
 }
@@ -281,7 +288,7 @@ function Search() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-black mb-1">Search & Discover</h1>
           <p className="text-gray-500 text-sm">
-            {totalResults > 0 ? `${totalResults.toLocaleString()} movies found` : "Find your next favourite movie"}
+            {totalResults > 0 ? `${totalResults.toLocaleString()} titles found` : "Find your next favourite movie or show"}
           </p>
         </div>
 
@@ -336,7 +343,7 @@ function Search() {
               </svg>
               <input
                 type="text"
-                placeholder="Search movies by title..."
+                placeholder="Search movies & TV shows by title..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
@@ -472,7 +479,7 @@ function Search() {
           // Empty state
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <div className="text-6xl">🎬</div>
-            <h2 className="text-xl font-bold text-gray-300">No movies found</h2>
+            <h2 className="text-xl font-bold text-gray-300">No results found</h2>
             <p className="text-gray-500 text-sm">Try different keywords or filters</p>
             <button onClick={clearFilters} className="mt-2 px-5 py-2.5 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-semibold transition-all">
               Clear Filters
@@ -484,9 +491,9 @@ function Search() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {results.map((movie) => (
                 <MovieCard
-                  key={movie.id}
+                  key={`${movie.media_type || "movie"}-${movie.id}`}
                   movie={movie}
-                  onClick={() => navigate(`/movie/${movie.id}`)}
+                  onClick={() => navigate(movie.media_type === "tv" ? `/tv/${movie.id}` : `/movie/${movie.id}`)}
                 />
               ))}
             </div>

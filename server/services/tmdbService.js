@@ -63,21 +63,43 @@ export const discoverMovies = async ({ query, genre, year, year_gte, year_lte, l
   let results, totalPages, totalResults;
 
   if (query?.trim()) {
-    const data = await get("/search/movie", {
-      query: query.trim(),
-      include_adult: false,
-      page,
-      ...(year && { year }),
-      ...(language && { language }),
-    });
-    let movies = data.results || [];
-    if (genre)    movies = movies.filter(m => m.genre_ids?.includes(Number(genre)));
-    if (rating)   movies = movies.filter(m => m.vote_average >= Number(rating));
-    if (language) movies = movies.filter(m => m.original_language === language);
+    // Text search: query BOTH movies and TV shows in parallel, then merge.
+    const [movieData, tvData] = await Promise.all([
+      get("/search/movie", {
+        query: query.trim(),
+        include_adult: false,
+        page,
+        ...(year && { year }),
+        ...(language && { language }),
+      }),
+      get("/search/tv", {
+        query: query.trim(),
+        include_adult: false,
+        page,
+        ...(language && { language }),
+      }),
+    ]);
 
-    results      = movies.filter(m => m.poster_path);
-    totalPages   = data.total_pages || 1;
-    totalResults = data.total_results || results.length;
+    // Normalize into one common shape so the client can render both the same way.
+    // Movies use `title`/`release_date`; TV shows use `name`/`first_air_date`.
+    const movies = (movieData.results || []).map(m => ({ ...m, media_type: "movie" }));
+    const tvShows = (tvData.results || []).map(t => ({
+      ...t,
+      media_type: "tv",
+      title: t.name,
+      release_date: t.first_air_date,
+    }));
+
+    let merged = [...movies, ...tvShows];
+    if (genre)    merged = merged.filter(x => x.genre_ids?.includes(Number(genre)));
+    if (rating)   merged = merged.filter(x => x.vote_average >= Number(rating));
+    if (language) merged = merged.filter(x => x.original_language === language);
+    merged = merged.filter(x => x.poster_path);
+    merged.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+    results      = merged;
+    totalPages   = Math.max(movieData.total_pages || 1, tvData.total_pages || 1);
+    totalResults = (movieData.total_results || 0) + (tvData.total_results || 0);
   } else {
     const params = {
       sort_by: sort || "popularity.desc",
@@ -93,7 +115,7 @@ export const discoverMovies = async ({ query, genre, year, year_gte, year_lte, l
     if (rating)    params["vote_average.gte"]    = rating;
 
     const data   = await get("/discover/movie", params);
-    results      = (data.results || []).filter(m => m.poster_path);
+    results      = (data.results || []).filter(m => m.poster_path).map(m => ({ ...m, media_type: "movie" }));
     totalPages   = data.total_pages || 1;
     totalResults = data.total_results || results.length;
   }

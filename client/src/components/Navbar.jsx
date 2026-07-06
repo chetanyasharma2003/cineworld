@@ -69,13 +69,15 @@ export default function Navbar() {
       if (!query.trim()) { setResults([]); return; }
       try {
         const { tmdbGet } = await import("../lib/tmdb");
-        const [movRes, pepRes] = await Promise.all([
+        const [movRes, tvRes, pepRes] = await Promise.all([
           tmdbGet("/search/movie", { query }),
+          tmdbGet("/search/tv", { query }),
           tmdbGet("/search/person", { query }),
         ]);
         const movies = (movRes.results || []).filter(m => m.poster_path).slice(0, 4).map(m => ({ ...m, _type: "movie" }));
+        const tv = (tvRes.results || []).filter(t => t.poster_path).slice(0, 3).map(t => ({ ...t, _type: "tv" }));
         const people = (pepRes.results || []).filter(p => p.profile_path).slice(0, 3).map(p => ({ ...p, _type: "person" }));
-        setResults([...people, ...movies]);
+        setResults([...people, ...movies, ...tv]);
       } catch { /* ignore */ }
     }, 350);
     return () => clearTimeout(delay);
@@ -367,6 +369,22 @@ export default function Navbar() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate group-hover:text-[#f59e0b] transition-colors">{item.title}</p>
                           <p className="text-xs text-slate-500 mt-0.5">{item.release_date?.split("-")[0]} · ⭐ {item.vote_average?.toFixed(1)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {results.filter(r => r._type === "tv").length > 0 && (
+                  <div>
+                    <p className="text-xs text-[#0ea5e9] font-semibold px-4 py-2 border-b border-white/5" style={{ background: "rgba(14,165,233,0.05)" }}>TV Shows</p>
+                    {results.filter(r => r._type === "tv").map(item => (
+                      <div key={`tv-${item.id}`}
+                        onClick={() => { saveToHistory(query); setQuery(""); setResults([]); setSearchOpen(false); navigate(`/tv/${item.id}`); }}
+                        className="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer transition-all group border-b border-white/5 last:border-0">
+                        <img src={`https://image.tmdb.org/t/p/w92${item.poster_path}`} className="w-10 h-14 rounded-lg object-cover shrink-0" alt={item.name} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate group-hover:text-[#0ea5e9] transition-colors">{item.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{item.first_air_date?.split("-")[0]} · ⭐ {item.vote_average?.toFixed(1)}</p>
                         </div>
                       </div>
                     ))}
