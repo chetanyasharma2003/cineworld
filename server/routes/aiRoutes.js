@@ -465,26 +465,21 @@ router.get("/health", async (req, res) => {
       CHAT_MODEL: process.env.GROQ_CHAT_MODEL || "llama-3.1-8b-instant"
     };
 
-    // Quick Groq health check
-    const res_ = await ai.chat(
-      models.JSON_MODEL,
-      "Respond with exactly: OK",
-      "Say OK",
-      10
-    );
+    // Test with a simple exported function
+    const result = await ai.parseSearchQuery("action movies");
 
-    if (res_.includes("OK")) {
+    if (result && typeof result === "object") {
       return res.json({
         status: "healthy",
         models,
-        groqWorking: true
+        groqWorking: true,
+        testResult: "parseSearchQuery OK"
       });
     } else {
       return res.status(503).json({
         status: "degraded",
         models,
-        groqResponse: res_.slice(0, 100),
-        error: "Groq responded unexpectedly"
+        error: "Groq responded but test failed"
       });
     }
   } catch (err) {
