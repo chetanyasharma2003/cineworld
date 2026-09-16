@@ -8,12 +8,14 @@ const getClient = () => {
 
 // Models configurable via environment to handle Groq's frequent deprecations
 // Fallback chain: try user's configured models, then fallback to known working models
+// Updated based on Groq free tier availability (Sep 2026)
 const DEFAULT_MODELS = [
   "llama-3.3-70b-versatile",
   "llama-3.1-70b-versatile",
   "llama-3.2-90b-vision-preview",
   "llama2-70b-4096",
-  "mixtral-8x7b-32768"
+  "llama-2-70b-chat",
+  "openai/gpt-oss-120b", // Free tier option
 ];
 
 const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama-3.3-70b-versatile";
