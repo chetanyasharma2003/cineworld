@@ -7,19 +7,18 @@ const getClient = () => {
 };
 
 // Models configurable via environment to handle Groq's frequent deprecations
-// Fallback chain: try user's configured models, then fallback to known working models
+// Fallback chain: Free tier OpenAI-compatible models, then other options
 // Updated based on Groq free tier availability (Sep 2026)
 const DEFAULT_MODELS = [
+  "openai/gpt-oss-120b",  // Free tier - primary
+  "openai/gpt-oss-20b",   // Free tier - secondary
   "llama-3.3-70b-versatile",
   "llama-3.1-70b-versatile",
-  "llama-3.2-90b-vision-preview",
   "llama2-70b-4096",
-  "llama-2-70b-chat",
-  "openai/gpt-oss-120b", // Free tier option
 ];
 
-const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama-3.3-70b-versatile";
-const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile";
+const JSON_MODEL = process.env.GROQ_JSON_MODEL || "openai/gpt-oss-120b";
+const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "openai/gpt-oss-120b";
 
 function extractJSON(text, type = "object") {
   const open = type === "array" ? "[" : "{";
