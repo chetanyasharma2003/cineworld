@@ -6,11 +6,11 @@ const getClient = () => {
   return _client;
 };
 
-// Fast model for JSON parsing, slower for quality chat
-// NOTE: Groq frequently deprecates models. Update these if you get "model_decommissioned" errors
-// Check https://console.groq.com/docs/models for current available models
-const JSON_MODEL = "llama-3.2-90b-vision-preview";   // latest, best quality
-const CHAT_MODEL = "llama-3.2-90b-vision-preview"; // latest model for chat & vision
+// Models configurable via environment to handle Groq's frequent deprecations
+// If models fail with "model_decommissioned", check https://console.groq.com/docs/models
+// and set GROQ_JSON_MODEL and GROQ_CHAT_MODEL env vars
+const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama2-70b-4096";
+const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama2-70b-4096";
 
 function extractJSON(text, type = "object") {
   const open = type === "array" ? "[" : "{";
