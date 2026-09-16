@@ -7,7 +7,7 @@ const getClient = () => {
 };
 
 // Fast model for JSON parsing, slower for quality chat
-const JSON_MODEL = "mixtral-8x7b-32768";   // ultra fast, great for structured output
+const JSON_MODEL = "llama-3.1-70b-versatile";   // reliable, great for structured output
 const CHAT_MODEL = "llama-3.1-70b-versatile"; // best free model for conversational quality
 
 function extractJSON(text, type = "object") {
