@@ -7,9 +7,17 @@ const getClient = () => {
 };
 
 // Models configurable via environment to handle Groq's frequent deprecations
-// Using llama-3.1-8b-instant as it's the most stable and widely available
-const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama-3.1-8b-instant";
-const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama-3.1-8b-instant";
+// Fallback chain: try user's configured models, then fallback to known working models
+const DEFAULT_MODELS = [
+  "llama-3.3-70b-versatile",
+  "llama-3.1-70b-versatile",
+  "llama-3.2-90b-vision-preview",
+  "llama2-70b-4096",
+  "mixtral-8x7b-32768"
+];
+
+const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama-3.3-70b-versatile";
+const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile";
 
 function extractJSON(text, type = "object") {
   const open = type === "array" ? "[" : "{";
@@ -31,15 +39,31 @@ function escapePrompt(str) {
 }
 
 async function chat(model, system, userContent, maxTokens = 400) {
-  const res = await getClient().chat.completions.create({
-    model,
-    max_tokens: maxTokens,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: userContent },
-    ],
-  });
-  return res.choices[0]?.message?.content || "";
+  const modelsToTry = [model, ...DEFAULT_MODELS];
+  let lastError = null;
+
+  for (const tryModel of modelsToTry) {
+    try {
+      const res = await getClient().chat.completions.create({
+        model: tryModel,
+        max_tokens: maxTokens,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userContent },
+        ],
+      });
+      console.log(`✓ Chat succeeded with model: ${tryModel}`);
+      return res.choices[0]?.message?.content || "";
+    } catch (err) {
+      lastError = err;
+      const msg = err.message || String(err);
+      console.warn(`✗ Model ${tryModel} failed: ${msg.slice(0, 100)}`);
+      continue;
+    }
+  }
+
+  // All models failed
+  throw lastError || new Error("All Groq models failed");
 }
 
 /**
