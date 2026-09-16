@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Navbar from "../components/Navbar";
 import toast from "react-hot-toast";
+import AIChatWidget from "../components/AIChatWidget";
 import { SkeletonTVDetail } from "../components/Skeletons";
 import { useRecentlyViewed } from "../hooks/useRecentlyViewed";
 
@@ -376,6 +377,8 @@ export default function TVDetail() {
             </div>
           </div>
         )}
+
+        <AIChatWidget movie={show} />
       </div>
 
       {/* Trailer Modal */}
