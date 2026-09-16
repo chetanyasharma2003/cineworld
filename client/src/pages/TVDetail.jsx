@@ -378,7 +378,11 @@ export default function TVDetail() {
           </div>
         )}
 
-        <AIChatWidget movie={show} />
+        <AIChatWidget movie={{
+          ...show,
+          title: show.name,
+          release_date: show.first_air_date,
+        }} />
       </div>
 
       {/* Trailer Modal */}
