@@ -448,6 +448,59 @@ router.post("/taste-similar", protect, async (req, res) => {
 });
 
 /**
+ * GET /api/ai/health
+ * Check Groq API connectivity (no auth required)
+ */
+router.get("/health", async (req, res) => {
+  try {
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(503).json({
+        status: "unconfigured",
+        error: "GROQ_API_KEY not set in environment"
+      });
+    }
+
+    const models = {
+      JSON_MODEL: process.env.GROQ_JSON_MODEL || "llama-3.1-8b-instant",
+      CHAT_MODEL: process.env.GROQ_CHAT_MODEL || "llama-3.1-8b-instant"
+    };
+
+    // Quick Groq health check
+    const res_ = await ai.chat(
+      models.JSON_MODEL,
+      "Respond with exactly: OK",
+      "Say OK",
+      10
+    );
+
+    if (res_.includes("OK")) {
+      return res.json({
+        status: "healthy",
+        models,
+        groqWorking: true
+      });
+    } else {
+      return res.status(503).json({
+        status: "degraded",
+        models,
+        groqResponse: res_.slice(0, 100),
+        error: "Groq responded unexpectedly"
+      });
+    }
+  } catch (err) {
+    res.status(503).json({
+      status: "unhealthy",
+      error: err.message,
+      groqConfigured: !!process.env.GROQ_API_KEY,
+      models: {
+        JSON_MODEL: process.env.GROQ_JSON_MODEL || "llama-3.1-8b-instant",
+        CHAT_MODEL: process.env.GROQ_CHAT_MODEL || "llama-3.1-8b-instant"
+      }
+    });
+  }
+});
+
+/**
  * GET /api/ai/taste-vector
  * Compute and store genre taste vector from watchlist (protected)
  */
