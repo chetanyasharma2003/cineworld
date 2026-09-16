@@ -7,8 +7,8 @@ const tmdb = axios.create({
 });
 
 tmdb.interceptors.request.use((config) => {
-  config.headers.Authorization = `Bearer ${env.TMDB_TOKEN}`;
   config.headers.accept = "application/json";
+  config.params = { ...config.params, api_key: env.TMDB_TOKEN };
   return config;
 });
 
