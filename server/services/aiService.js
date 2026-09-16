@@ -19,6 +19,16 @@ function extractJSON(text, type = "object") {
   return JSON.parse(text.slice(start, end + 1));
 }
 
+// Escape special characters in user input before interpolating into prompts
+function escapePrompt(str) {
+  if (typeof str !== "string") return str;
+  return str
+    .replace(/\\/g, "\\\\")      // Escape backslashes
+    .replace(/"/g, '\\"')         // Escape double quotes
+    .replace(/\n/g, "\\n")        // Escape newlines
+    .replace(/\r/g, "\\r");       // Escape carriage returns
+}
+
 async function chat(model, system, userContent, maxTokens = 400) {
   const res = await getClient().chat.completions.create({
     model,
@@ -35,6 +45,7 @@ async function chat(model, system, userContent, maxTokens = 400) {
  * Parse natural language query → TMDB discover params
  */
 export async function parseSearchQuery(query) {
+  const escapedQuery = escapePrompt(query);
   const text = await chat(
     JSON_MODEL,
     `You convert movie search requests into TMDB API parameters. Return ONLY valid JSON, no explanation, no markdown.
@@ -52,7 +63,7 @@ Return JSON with any relevant fields:
   "with_original_language": "ISO code e.g. en,ko,fr,hi",
   "searchQuery": "if user named a specific title, actor, or director"
 }`,
-    `Query: "${query}"`,
+    `Query: "${escapedQuery}"`,
     300
   );
 
@@ -67,14 +78,16 @@ Return JSON with any relevant fields:
  * Mood-based movie recommendations → [{title, year, reason, searchQuery}]
  */
 export async function getMoodRecommendations(mood, watchedTitles = []) {
-  const excludeNote = watchedTitles.length
-    ? `\nAlready watched (do not recommend): ${watchedTitles.slice(0, 15).join(", ")}`
+  const escapedMood = escapePrompt(mood);
+  const escapedTitles = watchedTitles.slice(0, 15).map(escapePrompt);
+  const excludeNote = escapedTitles.length
+    ? `\nAlready watched (do not recommend): ${escapedTitles.join(", ")}`
     : "";
 
   const text = await chat(
     JSON_MODEL,
     `You are a world-class movie expert. Return ONLY a valid JSON array. No explanation, no markdown, no code fences.`,
-    `Recommend exactly 10 real movies for this mood/request: "${mood}"${excludeNote}
+    `Recommend exactly 10 real movies for this mood/request: "${escapedMood}"${excludeNote}
 
 Return a JSON array with exactly 10 items:
 [

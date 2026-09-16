@@ -69,6 +69,7 @@ const userSchema = new mongoose.Schema(
     },
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     digestOptOut: { type: Boolean, default: false },
+    isProfilePublic: { type: Boolean, default: false }, // Default to private for privacy
   },
   { timestamps: true },
 );

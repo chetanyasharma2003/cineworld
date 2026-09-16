@@ -395,7 +395,21 @@ router.delete("/:userId/follow", protect, async (req, res) => {
   }
 });
 
-// Public profile — includes isFollowedBy so client doesn't need a second request
+// Toggle profile privacy
+router.post("/me/privacy-toggle", protect, async (req, res) => {
+  try {
+    const updated = await User.findByIdAndUpdate(
+      req.user._id,
+      { isProfilePublic: !req.user.isProfilePublic },
+      { new: true }
+    ).select("isProfilePublic");
+    res.json({ isProfilePublic: updated.isProfilePublic });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Public profile — respects privacy settings (watcha list only if public or own profile)
 router.get("/:userId/profile", optionalProtect, async (req, res) => {
   try {
     const targetId = req.params.userId;
@@ -404,26 +418,31 @@ router.get("/:userId/profile", optionalProtect, async (req, res) => {
     }
 
     const user = await User.findById(targetId)
-      .select("name avatarUrl watchlist following createdAt")
+      .select("name avatarUrl watchlist following createdAt isProfilePublic")
       .lean();
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const followerCount = await User.countDocuments({ following: user._id });
 
-    // Check follow status without a second round-trip on the client
-    const isFollowedBy = req.user
+    // Check follow status and if viewing own profile
+    const isOwnProfile = req.user?._id?.toString() === targetId;
+    const isFollowedBy = req.user && !isOwnProfile
       ? !!(await User.exists({ _id: req.user._id, following: user._id }))
       : false;
+
+    // Only show watchlist if profile is public OR user is viewing their own profile
+    const showWatchlist = user.isProfilePublic || isOwnProfile;
 
     res.json({
       _id: user._id,
       name: user.name,
       avatarUrl: user.avatarUrl || null,
+      isProfilePublic: user.isProfilePublic,
       watchlistCount: user.watchlist?.length || 0,
       followingCount: user.following?.length || 0,
       followerCount,
       isFollowedBy,
-      recentWatchlist: (user.watchlist || []).slice(0, 12),
+      recentWatchlist: showWatchlist ? (user.watchlist || []).slice(0, 12) : [],
       joinedAt: user.createdAt,
     });
   } catch (err) {
