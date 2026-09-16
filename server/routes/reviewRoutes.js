@@ -141,13 +141,18 @@ router.post("/", protect, validate(createReviewSchema), async (req, res) => {
       return res.status(400).json({ message: "Rating must be between 1 and 5" });
     }
 
-    // AI content moderation (only runs if GROQ_API_KEY is set)
+    // AI content moderation (graceful fallback if Groq unavailable)
     if (process.env.GROQ_API_KEY) {
-      const moderation = await moderateReview(content);
-      if (!moderation.safe) {
-        return res.status(400).json({
-          message: `Review flagged: ${moderation.reason}. Please revise your review.`,
-        });
+      try {
+        const moderation = await moderateReview(content);
+        if (!moderation.safe) {
+          return res.status(400).json({
+            message: `Review flagged: ${moderation.reason}. Please revise your review.`,
+          });
+        }
+      } catch (moderationErr) {
+        // If AI moderation fails, log it but don't block review submission
+        console.warn("AI moderation unavailable, allowing review:", moderationErr.message);
       }
     }
 
