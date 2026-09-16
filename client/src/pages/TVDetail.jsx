@@ -380,6 +380,7 @@ export default function TVDetail() {
 
         <AIChatWidget movie={{
           ...show,
+          id: Number(show.id),
           title: show.name,
           release_date: show.first_air_date,
         }} />
