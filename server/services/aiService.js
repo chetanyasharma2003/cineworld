@@ -7,11 +7,9 @@ const getClient = () => {
 };
 
 // Models configurable via environment to handle Groq's frequent deprecations
-// Current available models (verified Sept 2026):
-// - llama-3.1-8b-instant (fast)
-// - llama-3.3-70b-versatile (best quality)
-const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama-3.3-70b-versatile";
-const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile";
+// Using llama-3.1-8b-instant as it's the most stable and widely available
+const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama-3.1-8b-instant";
+const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama-3.1-8b-instant";
 
 function extractJSON(text, type = "object") {
   const open = type === "array" ? "[" : "{";
