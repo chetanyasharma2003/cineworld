@@ -3,12 +3,13 @@ import User from "../models/User.js";
 import { env } from "../config/env.js";
 
 export const protect = async (req, res, next) => {
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
+  if (req.headers.authorization) {
     try {
-      const token = req.headers.authorization.split(" ")[1];
+      const parts = req.headers.authorization.split(" ");
+      if (parts.length !== 2 || parts[0] !== "Bearer") {
+        return res.status(401).json({ message: "Invalid authorization header format" });
+      }
+      const token = parts[1];
       const decoded = jwt.verify(token, env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select("-password");
       if (!req.user) {

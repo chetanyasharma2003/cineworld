@@ -170,6 +170,9 @@ router.post("/", protect, validate(createReviewSchema), async (req, res) => {
 // Edit review
 router.put("/:reviewId", protect, validate(editReviewSchema), async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.reviewId)) {
+      return res.status(400).json({ message: "Invalid review ID format" });
+    }
     const review = await Review.findById(req.params.reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
     if (review.user?.toString() !== req.user._id.toString()) {
@@ -194,6 +197,9 @@ router.put("/:reviewId", protect, validate(editReviewSchema), async (req, res) =
 // Toggle helpful vote
 router.post("/:reviewId/helpful", protect, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.reviewId)) {
+      return res.status(400).json({ message: "Invalid review ID format" });
+    }
     const review = await Review.findById(req.params.reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
 
@@ -215,6 +221,9 @@ router.post("/:reviewId/helpful", protect, async (req, res) => {
 // Delete review
 router.delete("/:reviewId", protect, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.reviewId)) {
+      return res.status(400).json({ message: "Invalid review ID format" });
+    }
     const review = await Review.findById(req.params.reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
 

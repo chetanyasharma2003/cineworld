@@ -26,11 +26,25 @@ function ttlFor(path) {
   return 10 * 60;                                         // 10 min
 }
 
-// Generic proxy — forwards any GET path + query to TMDB
+// Whitelist of allowed TMDB query parameters (prevent injection)
+const ALLOWED_PARAMS = new Set([
+  "query", "page", "include_adult", "language", "region", "year",
+  "primary_release_year", "primary_release_date.gte", "primary_release_date.lte",
+  "vote_count.gte", "vote_average.gte", "with_genres", "without_genres",
+  "with_original_language", "sort_by", "timezone", "watch_region",
+  "with_watch_providers", "watch_monetization_types",
+]);
+
+// Generic proxy — forwards GET path + whitelisted params to TMDB
 // e.g. GET /api/tmdb/search/movie?query=inception
 router.get("/*path", (req, res, next) => withCache(ttlFor(req.path))(req, res, next), async (req, res) => {
   try {
-    const { data } = await tmdb.get(req.path, { params: req.query });
+    // Filter params — only allow whitelisted ones
+    const filteredParams = Object.entries(req.query)
+      .filter(([key]) => ALLOWED_PARAMS.has(key))
+      .reduce((acc, [k, v]) => { acc[k] = v; return acc; }, {});
+
+    const { data } = await tmdb.get(req.path, { params: filteredParams });
     res.json(data);
   } catch (err) {
     const status = err.response?.status || 502;

@@ -67,23 +67,35 @@ router.get("/me/watchlist", protect, (req, res) => {
   res.json({ movies: req.user.watchlist || [] });
 });
 
-// Add / update watchlist entry
+// Add / update watchlist entry (atomic)
 router.post("/me/watchlist", protect, async (req, res) => {
   try {
     const movie = sanitizeMovieForWatchlist(req.body.movie, req.body.status);
-    const current = req.user.watchlist || [];
-    const exists = current.some((item) => item.id === movie.id);
-    req.user.watchlist = exists
-      ? current.map((item) => (item.id === movie.id ? movie : item))
-      : [movie, ...current];
-    await req.user.save();
-    res.status(201).json({ movies: req.user.watchlist });
+
+    // Atomic operation: check if exists, update or push
+    const user = await User.findOneAndUpdate(
+      { _id: req.user._id, "watchlist.id": movie.id },
+      { $set: { "watchlist.$": movie } },
+      { new: true, runValidators: false }
+    );
+
+    if (!user) {
+      // Movie not in watchlist, add it
+      const updated = await User.findByIdAndUpdate(
+        req.user._id,
+        { $push: { watchlist: { $each: [movie], $position: 0 } } },
+        { new: true }
+      );
+      return res.status(201).json({ movies: updated.watchlist });
+    }
+
+    res.status(201).json({ movies: user.watchlist });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Update status of a watchlist entry
+// Update status of a watchlist entry (atomic)
 router.put("/me/watchlist/:movieId", protect, async (req, res) => {
   try {
     const movieId = Number(req.params.movieId);
@@ -91,13 +103,19 @@ router.put("/me/watchlist/:movieId", protect, async (req, res) => {
     if (!WATCHLIST_STATUSES.includes(status)) {
       return res.status(400).json({ message: `status must be one of: ${WATCHLIST_STATUSES.join(", ")}` });
     }
-    const current = req.user.watchlist || [];
-    const item = current.find((m) => m.id === movieId);
-    if (!item) return res.status(404).json({ message: "Movie not in watchlist" });
-    item.status = status;
-    req.user.markModified("watchlist");
-    await req.user.save();
-    res.json({ movies: req.user.watchlist });
+
+    // Atomic: update nested watchlist item status using positional operator
+    const updated = await User.findOneAndUpdate(
+      { _id: req.user._id, "watchlist.id": movieId },
+      { $set: { "watchlist.$.status": status } },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Movie not in watchlist" });
+    }
+
+    res.json({ movies: updated.watchlist });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

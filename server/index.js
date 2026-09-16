@@ -224,8 +224,17 @@ app.get("/health", (req, res) => {
 
 app.get("/", (req, res) => res.json({ message: "CineWorld API running ✅" }));
 
-// ── Metrics endpoint ──────────────────────────────────────────────────────────
+// ── Metrics endpoint (protected with API key) ──────────────────────────────────
 app.get("/metrics", (req, res) => {
+  // Require METRICS_API_KEY in query or Authorization header
+  const queryKey = req.query.key;
+  const authKey = req.headers.authorization?.replace("Bearer ", "");
+  const metricsKey = env.METRICS_API_KEY;
+
+  if (!metricsKey || (queryKey !== metricsKey && authKey !== metricsKey)) {
+    return res.status(403).json({ error: "Unauthorized. Provide METRICS_API_KEY." });
+  }
+
   const times = metrics.responseTimes;
   const sorted = [...times].sort((a, b) => a - b);
   const p50 = sorted[Math.floor(sorted.length * 0.5)] || 0;

@@ -108,7 +108,15 @@ router.get("/insights", protect, async (req, res) => {
 router.post("/chat", async (req, res) => {
   const { movieContext, message, history } = req.body;
   if (!message?.trim()) return res.status(400).json({ error: "message is required" });
-  if (!movieContext?.title) return res.status(400).json({ error: "movieContext with title is required" });
+  if (!movieContext || typeof movieContext !== "object") return res.status(400).json({ error: "movieContext must be an object" });
+  if (!movieContext?.title || typeof movieContext.title !== "string") return res.status(400).json({ error: "movieContext.title (string) is required" });
+
+  // Validate movieId if present — must be integer
+  if (movieContext.movieId !== undefined && movieContext.movieId !== null) {
+    const id = Number(movieContext.movieId);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: "movieContext.movieId must be a positive integer" });
+    movieContext.movieId = id; // Normalize to number
+  }
 
   // Validate history shape — accept only well-formed turns
   const safeHistory = Array.isArray(history)

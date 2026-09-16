@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import express from "express";
+import mongoose from "mongoose";
 import Notification from "../models/Notification.js";
 import { protect, protectNonce } from "../middleware/authMiddleware.js";
 import { registerSseClient, unregisterSseClient, notifyUser } from "../utils/notifyUser.js";
@@ -10,6 +11,7 @@ const router = express.Router();
 // ── One-time SSE nonce store ───────────────────────────────────────────────────
 // nonce → { userId, expiresAt }  (60 second TTL, single use)
 const sseNonces = new Map();
+const MAX_NONCES = 10000; // Prevent unbounded memory growth
 
 // Purge expired nonces every 2 minutes
 setInterval(() => {
@@ -22,6 +24,13 @@ setInterval(() => {
 // POST /api/notifications/sse-token — exchange Bearer JWT for a short-lived nonce
 router.post("/sse-token", protect, (req, res) => {
   const nonce = crypto.randomBytes(32).toString("hex");
+
+  // Prevent unbounded memory growth — remove oldest nonce if at capacity
+  if (sseNonces.size >= MAX_NONCES) {
+    const oldestKey = sseNonces.keys().next().value;
+    sseNonces.delete(oldestKey);
+  }
+
   sseNonces.set(nonce, {
     userId: String(req.user._id),
     expiresAt: Date.now() + 60_000, // 60 seconds
@@ -77,6 +86,9 @@ router.post("/mark-read", protect, async (req, res) => {
 // POST /api/notifications/mark-read/:id
 router.post("/mark-read/:id", protect, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid notification ID format" });
+    }
     await Notification.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       { read: true }
@@ -90,6 +102,9 @@ router.post("/mark-read/:id", protect, async (req, res) => {
 // DELETE /api/notifications/:id
 router.delete("/:id", protect, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid notification ID format" });
+    }
     await Notification.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     res.json({ message: "Deleted" });
   } catch (err) {

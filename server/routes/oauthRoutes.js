@@ -110,8 +110,14 @@ if (OAUTH_ENABLED) {
           maxAge:   7 * 24 * 60 * 60 * 1000,
         });
 
-        // Redirect to client — token in query param (client reads it once then discards)
-        res.redirect(`${env.CLIENT_ORIGIN}/oauth-callback?token=${accessToken}`);
+        res.cookie("accessToken", accessToken, {
+          httpOnly: true,
+          secure:   env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge:   15 * 60 * 1000,
+        });
+
+        res.redirect(`${env.CLIENT_ORIGIN}/oauth-callback`);
       } catch {
         res.redirect(`${env.CLIENT_ORIGIN}/login?error=oauth`);
       }
