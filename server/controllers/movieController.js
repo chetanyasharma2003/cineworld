@@ -7,7 +7,8 @@ export const getHomeMovies = async (req, res) => {
     const sections = await fetchHomeSections();
     res.json({ success: true, sections });
   } catch (error) {
-    res.status(502).json({ success: false, message: "Failed to load movie data" });
+    console.error("getHomeMovies error:", error.message, error.response?.status, error.response?.data);
+    res.status(502).json({ success: false, message: "Failed to load movie data", error: error.message });
   }
 };
 

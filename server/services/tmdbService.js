@@ -13,8 +13,13 @@ tmdb.interceptors.request.use((config) => {
 });
 
 const get = async (url, params = {}) => {
-  const response = await tmdb.get(url, { params });
-  return response.data;
+  try {
+    const response = await tmdb.get(url, { params });
+    return response.data;
+  } catch (error) {
+    console.error(`TMDB API Error [${url}]:`, error.response?.status, error.response?.data || error.message);
+    throw error;
+  }
 };
 
 export const fetchHomeSections = async () => {
