@@ -7,10 +7,11 @@ const getClient = () => {
 };
 
 // Models configurable via environment to handle Groq's frequent deprecations
-// If models fail with "model_decommissioned", check https://console.groq.com/docs/models
-// and set GROQ_JSON_MODEL and GROQ_CHAT_MODEL env vars
-const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama2-70b-4096";
-const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama2-70b-4096";
+// Current available models (verified Sept 2026):
+// - llama-3.1-8b-instant (fast)
+// - llama-3.3-70b-versatile (best quality)
+const JSON_MODEL = process.env.GROQ_JSON_MODEL || "llama-3.3-70b-versatile";
+const CHAT_MODEL = process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile";
 
 function extractJSON(text, type = "object") {
   const open = type === "array" ? "[" : "{";
