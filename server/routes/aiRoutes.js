@@ -37,8 +37,9 @@ router.post("/search", async (req, res) => {
   try {
     const params = await ai.parseSearchQuery(query.trim().slice(0, 300));
     res.json({ params });
-  } catch {
-    res.status(500).json({ error: "AI search failed" });
+  } catch (err) {
+    console.error("AI search error:", err.message);
+    res.status(500).json({ error: "AI search failed: " + err.message });
   }
 });
 

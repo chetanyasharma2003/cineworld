@@ -84,6 +84,7 @@ router.get("/:movieId", optionalProtect, async (req, res) => {
       pages: Math.ceil(total / limit),
     });
   } catch (err) {
+    console.error("Review route error:", err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -119,6 +120,7 @@ router.get("/:movieId/rating", async (req, res) => {
       distribution: dist,
     });
   } catch (err) {
+    console.error("Review route error:", err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -160,6 +162,7 @@ router.post("/", protect, validate(createReviewSchema), async (req, res) => {
     await review.save();
     res.status(201).json(serializeReview(review, req.user._id));
   } catch (err) {
+    console.error("Review route error:", err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -183,6 +186,7 @@ router.put("/:reviewId", protect, validate(editReviewSchema), async (req, res) =
     await review.save();
     res.json(serializeReview(review, req.user._id));
   } catch (err) {
+    console.error("Review route error:", err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -203,6 +207,7 @@ router.post("/:reviewId/helpful", protect, async (req, res) => {
     await review.save();
     res.json({ helpfulCount: review.helpful.length, helpfulByMe: idx < 0 });
   } catch (err) {
+    console.error("Review route error:", err.message);
     res.status(500).json({ message: err.message });
   }
 });
@@ -220,6 +225,7 @@ router.delete("/:reviewId", protect, async (req, res) => {
     await review.deleteOne();
     res.json({ message: "Review deleted" });
   } catch (err) {
+    console.error("Review route error:", err.message);
     res.status(500).json({ message: err.message });
   }
 });
