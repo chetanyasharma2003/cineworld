@@ -7,6 +7,19 @@ import * as ai from "../services/aiService.js";
 
 const router = express.Router();
 
+// Helper: Handle Groq API errors gracefully
+const handleAIError = (err, res) => {
+  const message = err.message || String(err);
+  const isGroqError = message.includes("model") || message.includes("Groq");
+  const status = isGroqError ? 503 : 500;
+  console.error("AI route error:", message);
+  res.status(status).json({
+    error: isGroqError
+      ? "AI service temporarily unavailable. Try again later."
+      : "AI request failed. Please try again."
+  });
+};
+
 // AI endpoints are expensive — tighter rate limit
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -38,8 +51,7 @@ router.post("/search", async (req, res) => {
     const params = await ai.parseSearchQuery(query.trim().slice(0, 300));
     res.json({ params });
   } catch (err) {
-    console.error("AI search error:", err.message);
-    res.status(500).json({ error: "AI search failed: " + err.message });
+    handleAIError(err, res);
   }
 });
 
@@ -58,8 +70,8 @@ router.post("/mood", async (req, res) => {
       Array.isArray(watchedTitles) ? watchedTitles : []
     );
     res.json({ recommendations });
-  } catch {
-    res.status(500).json({ error: "AI mood recommendations failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -77,8 +89,8 @@ router.post("/compare", async (req, res) => {
   try {
     const verdict = await ai.getCompareVerdict(movieA, movieB);
     res.json({ verdict });
-  } catch {
-    res.status(500).json({ error: "AI compare failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -95,8 +107,8 @@ router.get("/insights", protect, async (req, res) => {
 
     const insights = await ai.getTasteInsights(user.watchlist);
     res.json({ insights });
-  } catch {
-    res.status(500).json({ error: "AI insights failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -155,7 +167,8 @@ router.post("/chat", async (req, res) => {
       safeHistory,
       ragReviews
     );
-  } catch {
+  } catch (err) {
+    console.error("Stream chat error:", err.message);
     res.write(`data: ${JSON.stringify({ error: "Chat failed", done: true })}\n\n`);
     res.end();
   }
@@ -173,8 +186,8 @@ router.post("/for-you", protect, async (req, res) => {
     }
     const recommendations = await ai.getForYouRecommendations(user.watchlist);
     res.json({ recommendations });
-  } catch {
-    res.status(500).json({ error: "AI For You failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -191,8 +204,8 @@ router.post("/review-summary", async (req, res) => {
   try {
     const summary = await ai.summarizeReviews(reviews);
     res.json({ summary });
-  } catch {
-    res.status(500).json({ error: "Review summarization failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -207,8 +220,8 @@ router.post("/similar", async (req, res) => {
   try {
     const recommendations = await ai.getSimilarButDifferent(movie);
     res.json({ recommendations });
-  } catch {
-    res.status(500).json({ error: "Similar movies failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -224,8 +237,8 @@ router.post("/watchlist-group", protect, async (req, res) => {
     }
     const result = await ai.groupWatchlist(user.watchlist);
     res.json(result || { groups: null });
-  } catch {
-    res.status(500).json({ error: "Watchlist grouping failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -258,7 +271,8 @@ router.post("/watchlist-chat", protect, async (req, res) => {
       () => { res.write(`data: ${JSON.stringify({ done: true })}\n\n`); res.end(); },
       safeHistory
     );
-  } catch {
+  } catch (err) {
+    console.error("Watchlist chat error:", err.message);
     res.write(`data: ${JSON.stringify({ error: "Chat failed", done: true })}\n\n`);
     res.end();
   }
@@ -313,7 +327,8 @@ router.post("/feedback", protect, async (req, res) => {
 
     await user.save();
     res.json({ ok: true, liked });
-  } catch {
+  } catch (err) {
+    console.error("Feedback save error:", err.message);
     res.status(500).json({ error: "Failed to save feedback" });
   }
 });
@@ -365,8 +380,8 @@ router.post("/poster-mood", async (req, res) => {
     const result = await ai.analyzeMoviePoster(posterUrl, movieTitle);
     if (!result) return res.status(503).json({ error: "Poster analysis unavailable" });
     res.json(result);
-  } catch {
-    res.status(500).json({ error: "Poster mood analysis failed" });
+  } catch (err) {
+    handleAIError(err, res);
   }
 });
 
@@ -402,7 +417,8 @@ router.post("/vector-similar", async (req, res) => {
   try {
     const ranked = ai.rankBySimilarity(target, candidates.slice(0, 100));
     res.json({ ranked });
-  } catch {
+  } catch (err) {
+    console.error("Vector similarity error:", err.message);
     res.status(500).json({ error: "Vector similarity failed" });
   }
 });
@@ -425,7 +441,8 @@ router.post("/taste-similar", protect, async (req, res) => {
     const centroid = ai.computeCentroid(user.watchlist);
     const ranked   = ai.rankBySimilarity(centroid, candidates.slice(0, 100));
     res.json({ ranked });
-  } catch {
+  } catch (err) {
+    console.error("Taste similarity error:", err.message);
     res.status(500).json({ error: "Taste similarity failed" });
   }
 });
@@ -446,7 +463,8 @@ router.get("/taste-vector", protect, async (req, res) => {
     await User.findByIdAndUpdate(req.user._id, { tasteVector: vector });
 
     res.json({ tasteVector: vector });
-  } catch {
+  } catch (err) {
+    console.error("Taste vector error:", err.message);
     res.status(500).json({ error: "Taste vector computation failed" });
   }
 });
@@ -479,7 +497,8 @@ router.post("/person-chat", async (req, res) => {
       () => { res.write(`data: ${JSON.stringify({ done: true })}\n\n`); res.end(); },
       safeHistory
     );
-  } catch {
+  } catch (err) {
+    console.error("Person chat error:", err.message);
     res.write(`data: ${JSON.stringify({ error: "Chat failed", done: true })}\n\n`);
     res.end();
   }
