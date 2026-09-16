@@ -7,8 +7,10 @@ const getClient = () => {
 };
 
 // Fast model for JSON parsing, slower for quality chat
-const JSON_MODEL = "llama-3.1-70b-versatile";   // reliable, great for structured output
-const CHAT_MODEL = "llama-3.1-70b-versatile"; // best free model for conversational quality
+// NOTE: Groq frequently deprecates models. Update these if you get "model_decommissioned" errors
+// Check https://console.groq.com/docs/models for current available models
+const JSON_MODEL = "llama-3.2-90b-vision-preview";   // latest, best quality
+const CHAT_MODEL = "llama-3.2-90b-vision-preview"; // latest model for chat & vision
 
 function extractJSON(text, type = "object") {
   const open = type === "array" ? "[" : "{";
