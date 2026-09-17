@@ -104,20 +104,21 @@ const authLimiter = rateLimit({
 // ── CORS ───────────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: function (origin, callback) {
+    const clientOrigins = (process.env.CLIENT_ORIGIN || "").split(",").map(o => o.trim()).filter(Boolean);
     const allowed = [
-      process.env.CLIENT_ORIGIN,
+      ...clientOrigins,
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
       "http://localhost:5176",
       "http://localhost:5177",
       "http://localhost:3000",
-    ].filter(Boolean);
+    ];
     if (!origin) return callback(null, true);
     if (allowed.includes(origin)) return callback(null, true);
     if (!IS_PROD && origin.startsWith("http://localhost:")) return callback(null, true);
     // Allow all Vercel preview deployments for this project
-    if (origin.match(/^https:\/\/cineworld(-[a-z0-9]+)*-chetanya-s-projects\.vercel\.app$/)) return callback(null, true);
+    if (origin.match(/^https:\/\/cineworld(-[a-z0-9]+)*(-chetanya-s-projects)?\.vercel\.app$/)) return callback(null, true);
     return IS_PROD
       ? callback(new Error(`CORS: origin ${origin} not allowed`))
       : callback(null, true);
