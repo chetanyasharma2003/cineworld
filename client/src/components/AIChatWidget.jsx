@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { API_BASE_URL } from "../config/apiConfig";
 
-const API_BASE = API_BASE_URL;
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:8000/api").replace(/\/$/, "");
 
 const SUGGESTED = [
   "Is this family-friendly?",
