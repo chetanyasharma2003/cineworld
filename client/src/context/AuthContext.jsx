@@ -22,7 +22,9 @@ export const AuthProvider = ({ children }) => {
   // On first mount: if we have a stored token, silently refresh it to confirm it's still valid
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
     if (!storedToken) { setAuthLoading(false); return; }
+
     (async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
@@ -33,14 +35,33 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem("token", data.token);
           setToken(data.token);
         } else {
-          // Refresh failed — clear everything
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          setToken(null);
-          setUser(null);
+          // Refresh failed but user data exists — keep them logged in with existing token
+          // They'll be asked to login again if token is actually expired
+          if (storedUser) {
+            try {
+              setUser(JSON.parse(storedUser));
+              // Keep existing token optimistically
+            } catch {
+              // Invalid stored user — clear everything
+              localStorage.removeItem("token");
+              localStorage.removeItem("user");
+              setToken(null);
+              setUser(null);
+            }
+          }
         }
-      } catch {
-        // Network error — keep existing token optimistically
+      } catch (err) {
+        // Network error — keep existing token and user optimistically
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            setToken(null);
+            setUser(null);
+          }
+        }
       } finally {
         setAuthLoading(false);
       }
