@@ -1,0 +1,175 @@
+/* Mobile-first responsive design system */
+
+/* Base breakpoints */
+@media (max-width: 640px) {
+  /* === TYPOGRAPHY === */
+  h1 { font-size: 1.75rem; line-height: 1.2; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+  body { font-size: 14px; }
+
+  /* === LAYOUT === */
+  body { --spacing: 12px; }
+
+  /* === CONTAINERS === */
+  .container { padding: 12px; max-width: 100%; }
+  .sidebar { display: none !important; }
+  .main-content { width: 100%; margin: 0; }
+
+  /* === GRID & FLEX === */
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .grid-2 { grid-template-columns: 1fr !important; }
+  .grid-3 { grid-template-columns: 1fr !important; }
+  .grid-4 { grid-template-columns: 2fr 1fr !important; }
+
+  /* === BUTTONS === */
+  button, .btn {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 14px;
+    width: 100%;
+  }
+  .btn-group { flex-direction: column; }
+  .btn-group > * { width: 100%; }
+
+  /* === MODALS & OVERLAYS === */
+  .modal {
+    margin: 0;
+    width: 95%;
+    border-radius: 12px;
+    max-height: 90vh;
+  }
+  .modal-content { padding: 16px; }
+
+  /* === CARDS === */
+  .card {
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+  }
+  .movie-card {
+    flex: 0 0 calc(50% - 6px);
+  }
+
+  /* === FORMS === */
+  .form-group { margin-bottom: 12px; }
+  input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 6px;
+    min-height: 44px;
+  }
+  textarea { min-height: 100px; }
+  label { display: block; margin-bottom: 6px; font-weight: 500; }
+
+  /* === NAVIGATION === */
+  .navbar { flex-direction: column; padding: 12px; }
+  .nav-menu { flex-direction: column; width: 100%; }
+  .nav-menu > * { padding: 12px; width: 100%; }
+  .hamburger { display: block !important; }
+
+  /* === IMAGES === */
+  img { max-width: 100%; height: auto; }
+  .poster { height: 150px; }
+  .backdrop { height: 180px; }
+
+  /* === LISTS === */
+  .list-item { padding: 12px; }
+  .list-item + .list-item { border-top: 1px solid; }
+
+  /* === DROPDOWNS === */
+  .dropdown { min-width: auto; width: 100%; }
+
+  /* === SPACING === */
+  .p-1 { padding: 8px; }
+  .p-2 { padding: 12px; }
+  .m-1 { margin: 8px; }
+  .m-2 { margin: 12px; }
+}
+
+/* Tablet (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .movie-card { flex: 0 0 calc(33.33% - 8px); }
+  .sidebar { width: 70vw; }
+  button { min-width: 120px; }
+}
+
+/* Desktop (1025px+) */
+@media (min-width: 1025px) {
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .movie-card { flex: 0 0 calc(25% - 12px); }
+}
+
+/* === TOUCH-FRIENDLY INTERACTIONS === */
+@media (hover: none) and (pointer: coarse) {
+  /* Disable hover effects, increase touch targets */
+  button, a, .clickable {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 16px;
+  }
+  /* Remove hover pseudo-classes */
+  button:hover { background-color: inherit; }
+  a:hover { text-decoration: none; }
+}
+
+/* === NOTCH/SAFE AREA SUPPORT === */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .modal {
+    padding: max(12px, env(safe-area-inset-left))
+             max(12px, env(safe-area-inset-right))
+             max(12px, env(safe-area-inset-bottom))
+             max(12px, env(safe-area-inset-top));
+  }
+}
+
+/* === ORIENTATION === */
+@media (orientation: landscape) and (max-height: 600px) {
+  header { height: auto; padding: 8px; }
+  .modal { max-height: 80vh; overflow-y: auto; }
+  .poster { height: 120px; }
+  .grid { gap: 8px; }
+}
+
+/* === PRINT === */
+@media print {
+  .navbar, .sidebar, button, .btn { display: none; }
+  .card { break-inside: avoid; }
+}
+
+/* === OVERFLOW & SCROLLING === */
+@media (max-width: 640px) {
+  .horizontal-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* === ANIMATIONS (respect prefers-reduced-motion) === */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* === DARK MODE === */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --text: #ffffff;
+    --border: #333333;
+    --hover: #222222;
+  }
+}

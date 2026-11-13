@@ -1,0 +1,37 @@
+.responsive-grid {
+  display: grid;
+  width: 100%;
+  gap: 16px;
+  padding: 0;
+}
+
+/* Mobile: 2 columns */
+@media (max-width: 640px) {
+  .responsive-grid {
+    gap: 12px;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Tablet: 3 columns */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .responsive-grid {
+    gap: 14px;
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* Desktop: 4-6 columns */
+@media (min-width: 1025px) {
+  .responsive-grid {
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+  }
+}
+
+/* Extra wide: 6+ columns */
+@media (min-width: 1536px) {
+  .responsive-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  }
+}

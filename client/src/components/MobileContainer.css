@@ -1,0 +1,55 @@
+.mobile-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.mobile-container.with-padding {
+  padding: 16px;
+}
+
+.mobile-container.full-height {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .mobile-container {
+    max-width: 100vw;
+  }
+
+  .mobile-container.with-padding {
+    padding: 12px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .mobile-container {
+    max-width: 100%;
+  }
+
+  .mobile-container.with-padding {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .mobile-container {
+    max-width: 1200px;
+  }
+
+  .mobile-container.with-padding {
+    padding: 24px;
+  }
+}
+
+/* Safe area insets */
+@supports (padding: max(0px)) {
+  .mobile-container.with-padding {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
