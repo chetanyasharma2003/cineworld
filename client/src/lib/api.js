@@ -54,4 +54,19 @@ export const api = {
   delete: (endpoint) => fetchWithAuth(endpoint, { method: "DELETE" }),
 };
 
+// TMDB image URL builder
+export const imageUrl = (path, size = "w500") => {
+  if (!path) return "https://via.placeholder.com/500x750?text=No+Image";
+  return `https://image.tmdb.org/t/p/${size}${path}`;
+};
+
+// Error message extractor
+export const getErrorMessage = (error, fallback = "An error occurred") => {
+  if (typeof error === "string") return error;
+  if (error?.message) return error.message;
+  if (error?.data?.message) return error.data.message;
+  if (error?.data?.error) return error.data.error;
+  return fallback;
+};
+
 export { API_BASE_URL };
