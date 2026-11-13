@@ -69,7 +69,15 @@ const userSchema = new mongoose.Schema(
     },
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     digestOptOut: { type: Boolean, default: false },
-    isProfilePublic: { type: Boolean, default: false }, // Default to private for privacy
+    isProfilePublic: { type: Boolean, default: false },
+    role: { type: String, enum: ["user", "moderator", "admin", "banned"], default: "user" },
+    bannedUntil: { type: Date, default: null },
+    banReason: { type: String, default: null },
+    bio: { type: String, maxlength: 500, default: "" },
+    interests: [String],
+    favoriteGenres: [Number],
+    location: { type: String, default: "" },
+    website: { type: String, default: "" },
   },
   { timestamps: true },
 );

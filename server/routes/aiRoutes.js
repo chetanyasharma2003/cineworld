@@ -4,6 +4,7 @@ import { protect } from "../middleware/authMiddleware.js";
 import User from "../models/User.js";
 import Review from "../models/Review.js";
 import * as ai from "../services/aiService.js";
+import { AnalyticsService } from "../services/analyticsService.js";
 
 const router = express.Router();
 
@@ -69,6 +70,9 @@ router.post("/mood", async (req, res) => {
       mood.trim().slice(0, 200),
       Array.isArray(watchedTitles) ? watchedTitles : []
     );
+    if (req.user?._id) {
+      AnalyticsService.trackAIUsage(req.user._id, "mood_recommendations", { mood });
+    }
     res.json({ recommendations });
   } catch (err) {
     handleAIError(err, res);
@@ -106,6 +110,7 @@ router.get("/insights", protect, async (req, res) => {
     }
 
     const insights = await ai.getTasteInsights(user.watchlist);
+    AnalyticsService.trackAIUsage(req.user._id, "taste_insights");
     res.json({ insights });
   } catch (err) {
     handleAIError(err, res);
@@ -156,6 +161,9 @@ router.post("/chat", async (req, res) => {
   res.flushHeaders();
 
   try {
+    if (req.user?._id) {
+      AnalyticsService.trackAIUsage(req.user._id, "movie_chat", { movieId: movieContext.movieId });
+    }
     await ai.streamMovieChat(
       movieContext,
       message.trim().slice(0, 500),
@@ -185,6 +193,7 @@ router.post("/for-you", protect, async (req, res) => {
       return res.json({ recommendations: [], reason: "Add at least 3 movies to your watchlist." });
     }
     const recommendations = await ai.getForYouRecommendations(user.watchlist);
+    AnalyticsService.trackAIUsage(req.user._id, "for_you_recommendations");
     res.json({ recommendations });
   } catch (err) {
     handleAIError(err, res);

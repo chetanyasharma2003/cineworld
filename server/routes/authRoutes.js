@@ -11,6 +11,7 @@ import { notifyUser } from "./notificationRoutes.js";
 import { validate } from "../middleware/validate.js";
 import { signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas/authSchemas.js";
 import logger from "../utils/logger.js";
+import { AnalyticsService } from "../services/analyticsService.js";
 
 const router = express.Router();
 
@@ -72,6 +73,9 @@ router.post("/signup", validate(signupSchema), async (req, res) => {
     const welcomeNotif = await Notification.create({ user: user._id, icon: "🎬", text: `Welcome to CineWorld, ${name}! Start browsing movies and building your watchlist.`, link: "/" });
     notifyUser(user._id, welcomeNotif);
 
+    // Track analytics
+    AnalyticsService.trackSignup(user._id, "email");
+
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.status(201).json({ user: publicUser(user), token: createAccessToken(user), emailVerificationSent: emailSent });
   } catch (err) {
@@ -115,6 +119,9 @@ router.post("/login", validate(loginSchema), async (req, res) => {
     const refreshToken = createRefreshToken(user);
     user.refreshToken = refreshToken;
     await user.save();
+
+    // Track analytics
+    AnalyticsService.trackLogin(user._id);
 
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ user: publicUser(user), token: createAccessToken(user) });
