@@ -1,7 +1,8 @@
-import { TMDB_BASE_URL } from "../config/db.js";
 import axios from "axios";
 import { env } from "../config/env.js";
 import logger from "../utils/logger.js";
+
+const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
 const TMDB = axios.create({
   baseURL: TMDB_BASE_URL,
