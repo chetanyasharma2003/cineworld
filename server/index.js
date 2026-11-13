@@ -27,6 +27,8 @@ import aiRoutes from "./routes/aiRoutes.js";
 import oauthRoutes from "./routes/oauthRoutes.js";
 import advancedSearchRoutes from "./routes/advancedSearchRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import socialRoutes from "./routes/socialRoutes.js";
+import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import logger from "./utils/logger.js";
 import { startWeeklyDigestJob } from "./jobs/weeklyDigest.js";
 import { startBackupJobs } from "./jobs/dailyBackup.js";
@@ -223,6 +225,8 @@ app.use("/api/users", perUserLimiter, userRoutes);
 app.use("/api/tmdb", tmdbProxy);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/ai", perUserLimiter, aiRoutes);
+app.use("/api/social", socialRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 // ── Swagger UI ────────────────────────────────────────────────────────────────
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
