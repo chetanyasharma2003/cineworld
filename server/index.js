@@ -31,6 +31,7 @@ import logger from "./utils/logger.js";
 import { startWeeklyDigestJob } from "./jobs/weeklyDigest.js";
 import { startBackupJobs } from "./jobs/dailyBackup.js";
 import { deduplicateRequests, CacheOptimizer, RequestQueue } from "./services/performanceService.js";
+import { perUserLimiter, securityHeaders, validateInputLength, anomalyDetection } from "./middleware/securityHardening.js";
 
 // ── Sentry (error monitoring) ─────────────────────────────────────────────────
 if (process.env.SENTRY_DSN) {
@@ -150,6 +151,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// ── Additional security headers ────────────────────────────────────────────────
+app.use(securityHeaders);
+app.use(validateInputLength(1024 * 100));
+
 // ── Compression (gzip) — skip SSE connections ─────────────────────────────────
 app.use(compression({
   filter: (req, res) => {
@@ -206,17 +211,18 @@ app.use("/uploads", (req, res, next) => {
 
 // ── Routes ─────────────────────────────────────────────────────────────────────
 app.use("/api", limiter);
+app.use("/api", anomalyDetection);
 app.use("/api/auth", authLimiter);
-app.use("/api/reviews", reviewRoutes);
+app.use("/api/reviews", perUserLimiter, reviewRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", oauthRoutes);
 app.use("/api/movies", movieRoutes);
 app.use("/api/search", advancedSearchRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/admin", perUserLimiter, adminRoutes);
+app.use("/api/users", perUserLimiter, userRoutes);
 app.use("/api/tmdb", tmdbProxy);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/ai", aiRoutes);
+app.use("/api/ai", perUserLimiter, aiRoutes);
 
 // ── Swagger UI ────────────────────────────────────────────────────────────────
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
