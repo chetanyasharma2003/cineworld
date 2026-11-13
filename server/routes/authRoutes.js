@@ -10,6 +10,7 @@ import Notification from "../models/Notification.js";
 import { notifyUser } from "./notificationRoutes.js";
 import { validate } from "../middleware/validate.js";
 import { signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas/authSchemas.js";
+import logger from "../utils/logger.js";
 
 const router = express.Router();
 
@@ -59,16 +60,23 @@ router.post("/signup", validate(signupSchema), async (req, res) => {
     await user.save();
 
     const verifyUrl = `${env.CLIENT_ORIGIN}/verify-email?token=${verifyToken}`;
-    try { await sendVerificationEmail(email, name, verifyUrl); } catch {}
+    let emailSent = false;
+    try {
+      await sendVerificationEmail(email, name, verifyUrl);
+      emailSent = true;
+    } catch (emailErr) {
+      logger.warn("Verification email failed to send", { email, error: emailErr.message, userId: user._id });
+    }
 
     // Welcome notification
     const welcomeNotif = await Notification.create({ user: user._id, icon: "🎬", text: `Welcome to CineWorld, ${name}! Start browsing movies and building your watchlist.`, link: "/" });
     notifyUser(user._id, welcomeNotif);
 
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
-    res.status(201).json({ user: publicUser(user), token: createAccessToken(user), emailVerificationSent: true });
+    res.status(201).json({ user: publicUser(user), token: createAccessToken(user), emailVerificationSent: emailSent });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error("Signup failed", { error: err.message, email: req.body.email });
+    res.status(500).json({ message: "Account creation failed. Please try again." });
   }
 });
 
@@ -111,7 +119,8 @@ router.post("/login", validate(loginSchema), async (req, res) => {
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ user: publicUser(user), token: createAccessToken(user) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error("Login failed", { error: err.message, email: req.body.email });
+    res.status(500).json({ message: "Login failed. Please try again." });
   }
 });
 
@@ -138,7 +147,8 @@ router.post("/refresh", async (req, res) => {
     await user.save();
     res.cookie("refreshToken", newRefreshToken, { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ token: createAccessToken(user) });
-  } catch {
+  } catch (err) {
+    logger.warn("Token refresh failed", { error: err.message });
     res.clearCookie("refreshToken");
     res.status(401).json({ message: "Refresh token expired, please login again" });
   }
@@ -164,7 +174,8 @@ router.get("/verify-email", async (req, res) => {
     await user.save();
     res.json({ message: "Email verified successfully. You can now use all features." });
   } catch (err) {
-    res.status(500).json({ message: "Verification failed" });
+    logger.error("Email verification failed", { error: err.message });
+    res.status(500).json({ message: "Verification failed. Please try again." });
   }
 });
 
@@ -177,10 +188,16 @@ router.post("/resend-verification", protect, async (req, res) => {
     req.user.emailVerifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await req.user.save();
     const verifyUrl = `${env.CLIENT_ORIGIN}/verify-email?token=${verifyToken}`;
-    await sendVerificationEmail(req.user.email, req.user.name, verifyUrl);
-    res.json({ message: "Verification email sent" });
+    try {
+      await sendVerificationEmail(req.user.email, req.user.name, verifyUrl);
+      res.json({ message: "Verification email sent" });
+    } catch (emailErr) {
+      logger.error("Failed to send verification email", { email: req.user.email, error: emailErr.message });
+      res.status(503).json({ message: "Failed to send email. Please try again later." });
+    }
   } catch (err) {
-    res.status(500).json({ message: "Failed to send verification email" });
+    logger.error("Resend verification failed", { error: err.message, userId: req.user._id });
+    res.status(500).json({ message: "Failed to process request" });
   }
 });
 
@@ -197,10 +214,16 @@ router.post("/forgot-password", validate(forgotPasswordSchema), async (req, res)
     await user.save();
 
     const resetUrl = `${env.CLIENT_ORIGIN}/reset-password?token=${resetToken}`;
-    await sendPasswordResetEmail(user.email, user.name, resetUrl);
-    res.json({ message: "If that email exists, a reset link was sent." });
+    try {
+      await sendPasswordResetEmail(user.email, user.name, resetUrl);
+      res.json({ message: "If that email exists, a reset link was sent." });
+    } catch (emailErr) {
+      logger.error("Failed to send password reset email", { email: user.email, error: emailErr.message });
+      res.status(503).json({ message: "Failed to send email. Please try again later." });
+    }
   } catch (err) {
-    res.status(500).json({ message: "Failed to send reset email" });
+    logger.error("Forgot password failed", { error: err.message });
+    res.status(500).json({ message: "Failed to process request" });
   }
 });
 
@@ -223,7 +246,8 @@ router.post("/reset-password", validate(resetPasswordSchema), async (req, res) =
     await user.save();
     res.json({ message: "Password reset successful. You can now log in." });
   } catch (err) {
-    res.status(500).json({ message: "Failed to reset password" });
+    logger.error("Password reset failed", { error: err.message });
+    res.status(500).json({ message: "Failed to reset password. Please try again." });
   }
 });
 
