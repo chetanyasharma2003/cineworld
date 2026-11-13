@@ -45,12 +45,12 @@
 Copy these from `.env.example` and fill in YOUR values:
 
 ```env
-DATABASE_URL=mongodb+srv://YOUR_USER:YOUR_PASS@cluster.mongodb.net/cineworld
+DATABASE_URL=<your_mongodb_connection_string>
 JWT_SECRET=<generate random 32+ char string>
 TMDB_API_KEY=<from https://www.themoviedb.org/settings/api>
-GROQ_API_KEY=gsk_<from https://console.groq.com>
-STRIPE_SECRET_KEY=sk_test_<from https://dashboard.stripe.com>
-STRIPE_WEBHOOK_SECRET=whsec_<from Stripe webhooks>
+GROQ_API_KEY=<from https://console.groq.com>
+STRIPE_SECRET_KEY=<from https://dashboard.stripe.com>
+STRIPE_WEBHOOK_SECRET=<from Stripe webhooks>
 EMAIL_USER=<your_gmail@gmail.com>
 EMAIL_PASS=<Gmail app password>
 SENTRY_DSN=<optional, from Sentry>
@@ -58,6 +58,8 @@ CLIENT_ORIGIN=https://cineworld.vercel.app
 NODE_ENV=production
 METRICS_API_KEY=<generate random string>
 ```
+
+**⚠️ Note**: Use actual values when setting in Render, not these placeholders!
 
 - [ ] Add all environment variables
 - [ ] Click "Deploy"
