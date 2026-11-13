@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: cineworld-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: CLIENT_ORIGIN
+        value: https://cineworld.vercel.app
+      - key: SENTRY_DSN
+        sync: false
+      - key: METRICS_API_KEY
+        sync: false
+    healthCheckPath: /health
+    healthCheckInterval: 30
+    timeoutSeconds: 600
+    autoDeploy: true
+    git:
+      branch: main
+      repo: chetanyasharma2003/cineworld
+
+databases:
+  - name: cineworld-db
+    plan: free
+    ipAllowList: []
+
+  - type: redis
+    name: cineworld-cache
+    plan: free
+    ipAllowList: []
