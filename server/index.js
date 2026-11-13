@@ -27,6 +27,7 @@ import aiRoutes from "./routes/aiRoutes.js";
 import oauthRoutes from "./routes/oauthRoutes.js";
 import logger from "./utils/logger.js";
 import { startWeeklyDigestJob } from "./jobs/weeklyDigest.js";
+import { startBackupJobs } from "./jobs/dailyBackup.js";
 
 // ── Sentry (error monitoring) ─────────────────────────────────────────────────
 if (process.env.SENTRY_DSN) {
@@ -274,6 +275,7 @@ let server;
 connectDB().then(() => {
   server = http.createServer(app);
   startWeeklyDigestJob();
+  startBackupJobs();
 
   // Keep connections alive between requests instead of re-handshaking each time.
   // keepAliveTimeout must be > any upstream load-balancer idle timeout (usually 60s).
