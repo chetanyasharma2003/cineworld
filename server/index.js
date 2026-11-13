@@ -30,6 +30,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import logger from "./utils/logger.js";
 import { startWeeklyDigestJob } from "./jobs/weeklyDigest.js";
 import { startBackupJobs } from "./jobs/dailyBackup.js";
+import { deduplicateRequests, CacheOptimizer, RequestQueue } from "./services/performanceService.js";
 
 // ── Sentry (error monitoring) ─────────────────────────────────────────────────
 if (process.env.SENTRY_DSN) {
@@ -88,6 +89,10 @@ function recordMetric(route, statusCode, durationMs) {
   // Keep last 1000 samples
   if (metrics.responseTimes.length > 1000) metrics.responseTimes.shift();
 }
+
+// ── Performance optimization ────────────────────────────────────────────────
+const cacheOptimizer = new CacheOptimizer();
+const requestQueue = new RequestQueue(5);
 
 // ── Rate limiters ──────────────────────────────────────────────────────────────
 const limiter = rateLimit({
@@ -152,6 +157,9 @@ app.use(compression({
     return compression.filter(req, res);
   },
 }));
+
+// ── Request deduplication (GET requests only) ──────────────────────────────────
+app.use(deduplicateRequests);
 
 // ── Request ID + metrics timing ───────────────────────────────────────────────
 app.use((req, res, next) => {
@@ -259,6 +267,27 @@ app.get("/metrics", (req, res) => {
       .slice(0, 10)
       .reduce((acc, [k, v]) => { acc[k] = v; return acc; }, {}),
     db_state: ["disconnected","connected","connecting","disconnecting"][mongoose.connection.readyState] || "unknown",
+  });
+});
+
+// ── Performance stats endpoint ──────────────────────────────────────────────────
+app.get("/perf-stats", (req, res) => {
+  const queryKey = req.query.key;
+  const authKey = req.headers.authorization?.replace("Bearer ", "");
+  const metricsKey = env.METRICS_API_KEY;
+
+  if (!metricsKey || (queryKey !== metricsKey && authKey !== metricsKey)) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+
+  res.json({
+    cache: cacheOptimizer.getStats(),
+    request_queue: requestQueue.getStats(),
+    memory: {
+      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + "MB",
+      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + "MB",
+      external: Math.round(process.memoryUsage().external / 1024 / 1024) + "MB",
+    },
   });
 });
 
