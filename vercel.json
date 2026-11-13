@@ -1,25 +1,8 @@
 {
-  "projectId": "YOUR_VERCEL_PROJECT_ID",
-  "orgId": "YOUR_VERCEL_ORG_ID",
   "buildCommand": "cd client && npm run build",
   "outputDirectory": "client/dist",
-  "installCommand": "npm install",
   "framework": "vite",
   "rootDirectory": "client",
-  "env": [
-    {
-      "key": "VITE_API_URL",
-      "value": "@vite-api-url"
-    },
-    {
-      "key": "VITE_STRIPE_PUBLIC_KEY",
-      "value": "@vite-stripe-public-key"
-    }
-  ],
-  "git": {
-    "deploymentEnabled": true,
-    "deploymentRollbackEnabled": true
-  },
   "headers": [
     {
       "source": "/",
