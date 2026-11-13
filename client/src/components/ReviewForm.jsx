@@ -114,7 +114,7 @@ export function ReviewEditInline({ review, onSave, onCancel }) {
   );
 }
 
-function ReviewForm({ movieId, movieTitle = "", setReviews, openLogin, ratingData, setRatingData }) {
+function ReviewForm({ movieId, movieTitle = "", setReviews, openLogin, ratingData, setRatingData, mediaType = "movie" }) {
   const { user } = useAuth();
   const [content, setContent] = useState("");
   const [rating, setRating] = useState(null);
@@ -129,7 +129,7 @@ function ReviewForm({ movieId, movieTitle = "", setReviews, openLogin, ratingDat
     try {
       setLoading(true);
       setError("");
-      const res = await api.post("/reviews", { movieId, movieTitle, content, rating });
+      const res = await api.post("/reviews", { movieId, movieTitle, content, rating, mediaType });
       setReviews((prev) => [res.data, ...prev]);
       setContent("");
       setRating(null);
