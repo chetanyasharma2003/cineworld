@@ -40,7 +40,7 @@ if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || "development",
-    tracesSampleRate: 0.1,
+    tracesSampleRate: 0.01, // Reduced from 0.1 to 0.01 for faster startup
   });
 }
 

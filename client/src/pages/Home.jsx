@@ -244,40 +244,60 @@ function Home() {
     return () => observer.disconnect();
   }, [loading]);
 
-  // ✅ AI Recommendations — user login hone pe fetch karo
+  // ✅ AI Recommendations — LAZY LOAD (user scroll करे तब fetch)
   useEffect(() => {
     if (!user) { setRecs(null); setForYou([]); return; }
 
-    const fetchRecs = async () => {
-      setRecsLoading(true);
-      try {
-        const res = await api.get("/users/me/list");
-        const myList = res.data.movies || [];
-        if (myList.length < 2) { setRecs(null); return; }
-        const result = await getPersonalizedRecommendations(myList);
-        setRecs(result);
-      } catch {
-        setRecs(null);
-      } finally {
-        setRecsLoading(false);
-      }
-    };
+    // Defer AI recommendations fetching by 2 seconds
+    // This allows main content to load first
+    const timer = setTimeout(() => {
+      const fetchForYou = async () => {
+        setForYouLoading(true);
+        try {
+          const movies = await fetchSmartForYou();
+          setForYou(movies);
+        } catch {
+          setForYou([]);
+        } finally {
+          setForYouLoading(false);
+        }
+      };
 
-    const fetchForYou = async () => {
-      setForYouLoading(true);
-      try {
-        const movies = await fetchSmartForYou();
-        setForYou(movies);
-      } catch {
-        setForYou([]);
-      } finally {
-        setForYouLoading(false);
-      }
-    };
+      fetchForYou();
+    }, 2000);
 
-    fetchRecs();
-    fetchForYou();
+    return () => clearTimeout(timer);
   }, [user]);
+
+  // Fetch personalized recs ONLY when user scrolls down (IntersectionObserver)
+  const recsRef = useRef(null);
+  useEffect(() => {
+    if (!user || recommendations !== null) return;
+
+    const observer = new IntersectionObserver(
+      async ([entry]) => {
+        if (entry.isIntersecting) {
+          setRecsLoading(true);
+          try {
+            const res = await api.get("/users/me/list");
+            const myList = res.data.movies || [];
+            if (myList.length < 2) { setRecs(null); return; }
+            const result = await getPersonalizedRecommendations(myList);
+            setRecs(result);
+          } catch {
+            setRecs(null);
+          } finally {
+            setRecsLoading(false);
+          }
+          observer.disconnect();
+        }
+      },
+      { threshold: 0 }
+    );
+
+    if (recsRef.current) observer.observe(recsRef.current);
+    return () => observer.disconnect();
+  }, [user, recommendations]);
 
   if (loading) {
     return (
@@ -328,9 +348,10 @@ function Home() {
         {/* Continue Watching — movies in "watching" status */}
         {user && <ContinueWatching />}
 
-        {/* ✅ AI Personalized Recommendations — logged in users ke liye */}
+        {/* ✅ AI Personalized Recommendations — logged in users ke liye (LAZY LOADED) */}
         {user && (
           <>
+            <div ref={recsRef} />
             {recsLoading && (
               <div className="px-6 md:px-8 py-4">
                 <div className="flex items-center gap-3 mb-4">

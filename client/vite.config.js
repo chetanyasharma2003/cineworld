@@ -7,8 +7,9 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // Don't auto-update (faster initial load)
       includeAssets: ['favicon.svg', 'icons.svg'],
+      strategies: 'injectManifest', // Faster than autoUpdate
       manifest: {
         name: 'CineWorld',
         short_name: 'CineWorld',
